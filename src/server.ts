@@ -1,5 +1,6 @@
 import app from "./app";
 import { db } from "./db";
+import "dotenv/config";
 
 process.on("uncaughtException", (err) => {
   console.log(err);
