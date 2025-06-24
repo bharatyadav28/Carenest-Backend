@@ -1,7 +1,11 @@
-import { timestamp } from "drizzle-orm/mysql-core";
+import { boolean, timestamp } from "drizzle-orm/pg-core";
+export const min_timestamps = {
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+};
 
-const timestamps = {
-  updated_at: timestamp(),
-  created_at: timestamp().defaultNow().notNull(),
-  deleted_at: timestamp(),
+export const timestamps = {
+  ...min_timestamps,
+  isDeleted: boolean("is_deleted").default(false),
+  deletedAt: timestamp("deleted_at"),
 };

@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { Response } from "express";
 import "dotenv/config";
 import "express-async-errors";
 import cors from "cors";
@@ -6,8 +6,6 @@ import path from "path";
 import morgan from "morgan";
 import chalk from "chalk";
 
-import { db } from "./db";
-import { testUsers } from "./db/schema";
 import errorMiddleware from "./middlewares/error";
 import pageNotFound from "./middlewares/pageNotFound";
 
@@ -36,17 +34,12 @@ const istLogger = morgan((tokens, req, res) => {
 app.use(istLogger);
 
 app.get("/", (_, res: Response) =>
-  res.sendFile(path.join(__dirname, "public", "index.html"))
+  res.sendFile(path.join(__dirname, "../public", "index.html"))
 );
 
-app.get("/user", async (req: Request, res: Response) => {
-  const users = await db.select().from(testUsers);
-  return res.status(200).json({
-    success: true,
-    message: "user created successfully",
-    users,
-  });
-});
+import { userRouter } from "./@entities/user";
+
+app.use("/api/v1/user", userRouter);
 
 // Notfound and error middlewares
 app.use(pageNotFound);

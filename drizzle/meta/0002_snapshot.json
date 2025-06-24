@@ -1,6 +1,6 @@
 {
-  "id": "82aac087-5b56-4403-a46a-b64686f1903b",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "9d930058-c3e5-46c2-af1b-7b9cfc836a09",
+  "prevId": "43a4f018-de18-4820-ae3b-a5ab1e0fc403",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -20,6 +20,18 @@
           "primaryKey": false,
           "notNull": true
         },
+        "email": {
+          "name": "email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password": {
+          "name": "password",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
         "mobile": {
           "name": "mobile",
           "type": "varchar(15)",
@@ -31,12 +43,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
-        },
-        "password": {
-          "name": "password",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
         },
         "gender": {
           "name": "gender",
@@ -85,7 +91,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "valid_email": {
+          "name": "valid_email",
+          "value": "\"test-user3\".\"email\" ~* '^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$'"
+        }
+      },
       "isRLSEnabled": false
     }
   },
