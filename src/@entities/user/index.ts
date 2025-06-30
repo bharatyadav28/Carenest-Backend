@@ -1,4 +1,4 @@
 import userRouter from "./user.routes";
-import userModel from "./user.model";
+import { UserModel } from "./user.model";
 
-export { userRouter, userModel };
+export { userRouter, UserModel };

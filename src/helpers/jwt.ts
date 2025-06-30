@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { payloadType } from "../types/general";
+import { payloadType } from "../types/general-types";
 
 const minTime = 60 * 60 * 24;
 // const minTime =  10;
@@ -9,7 +9,7 @@ const maxTime = 60 * 60 * 24 * 7;
 
 const tempTime = 60 * 5; //  5 min
 
-export const getAccessToken = (payload: payloadType) => {
+export const generateAccessToken = (payload: payloadType) => {
   const secret = process.env.ACCESS_SECRET;
   if (secret) {
     const token = jwt.sign(payload, secret, {
@@ -20,7 +20,7 @@ export const getAccessToken = (payload: payloadType) => {
   return null;
 };
 
-export const getRefreshToken = (payload: payloadType) => {
+export const generateRefreshToken = (payload: payloadType) => {
   const secret = process.env.REFRESH_SECRET;
   if (secret) {
     const token = jwt.sign(payload, secret, {
@@ -31,13 +31,26 @@ export const getRefreshToken = (payload: payloadType) => {
   return null;
 };
 
-export const getTempToken = (payload: payloadType) => {
+export const generateTempToken = (payload: payloadType) => {
   const secret = process.env.TEMP_SECRET;
   if (secret) {
     const token = jwt.sign(payload, secret, {
       expiresIn: tempTime,
     });
     return token;
+  }
+  return null;
+};
+
+export const verifyJWTToken = (token: string, tokenType?: string) => {
+  const secret =
+    tokenType === "refresh"
+      ? process.env.REFRESH_SECRET
+      : process.env.ACCESS_SECRET;
+
+  if (secret) {
+    const payload = jwt.verify(token, secret);
+    return payload;
   }
   return null;
 };

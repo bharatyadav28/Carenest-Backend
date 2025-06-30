@@ -38,10 +38,11 @@ app.get("/", (_, res: Response) =>
 );
 
 import { userRouter } from "./@entities/user";
+import { getNewAccessToken } from "./middlewares/auth";
 
 app.use("/api/v1/user", userRouter);
+app.get("/api/v1/new-access-token", getNewAccessToken);
 
-// Notfound and error middlewares
 app.use(pageNotFound);
 app.use(errorMiddleware);
 

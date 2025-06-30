@@ -1,1 +1,0 @@
-ALTER TABLE "test-user3" ADD CONSTRAINT "valid_email" CHECK ("test-user3"."password" ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$');

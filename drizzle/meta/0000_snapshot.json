@@ -1,11 +1,11 @@
 {
-  "id": "82aac087-5b56-4403-a46a-b64686f1903b",
+  "id": "d0716b0e-60ad-48a3-ad34-42fcd9f243af",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.test-user3": {
-      "name": "test-user3",
+    "public.test-user4": {
+      "name": "test-user4",
       "schema": "",
       "columns": {
         "id": {
@@ -18,25 +18,38 @@
           "name": "name",
           "type": "varchar(255)",
           "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(255)",
+          "primaryKey": false,
           "notNull": true
+        },
+        "email_verified": {
+          "name": "email_verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "password": {
+          "name": "password",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
         },
         "mobile": {
           "name": "mobile",
           "type": "varchar(15)",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "address": {
           "name": "address",
           "type": "text",
           "primaryKey": false,
           "notNull": false
-        },
-        "password": {
-          "name": "password",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
         },
         "gender": {
           "name": "gender",
@@ -85,6 +98,83 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
+      "checkConstraints": {
+        "valid_email": {
+          "name": "valid_email",
+          "value": "\"test-user4\".\"email\" ~* '^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.otp": {
+      "name": "otp",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar(21)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "varchar(21)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "code": {
+          "name": "code",
+          "type": "varchar(4)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_At": {
+          "name": "expires_At",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "otp_userId_test-user4_id_fk": {
+          "name": "otp_userId_test-user4_id_fk",
+          "tableFrom": "otp",
+          "tableTo": "test-user4",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     }
@@ -97,6 +187,15 @@
         "user",
         "giver",
         "admin"
+      ]
+    },
+    "public.type": {
+      "name": "type",
+      "schema": "public",
+      "values": [
+        "account_verification",
+        "password_reset",
+        "two_step_auth"
       ]
     }
   },

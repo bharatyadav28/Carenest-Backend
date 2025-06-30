@@ -14,21 +14,23 @@ import { timestamps } from "../../helpers/columns";
 
 export const roleEnum = pgEnum("role", ["user", "giver", "admin"]);
 
-export const userModel = pgTable(
-  "test-user3",
+export const UserModel = pgTable(
+  "test-user4",
   {
     id: varchar("id", { length: 21 })
       .primaryKey()
       .notNull()
       .$defaultFn(() => nanoid(21)),
 
-    name: varchar("name", { length: 255 }).notNull(),
+    name: varchar("name", { length: 255 }),
 
     email: varchar("email", { length: 255 }).notNull(),
 
-    password: varchar("password", { length: 255 }).notNull(),
+    isEmailVerified: boolean("email_verified").notNull().default(false),
 
-    mobile: varchar("mobile", { length: 15 }).notNull(),
+    password: varchar("password", { length: 255 }),
+
+    mobile: varchar("mobile", { length: 15 }),
 
     address: text("address"),
 
@@ -46,13 +48,11 @@ export const userModel = pgTable(
   ]
 );
 
-export const createUserSchema = createInsertSchema(userModel).omit({
+export const createUserSchema = createInsertSchema(UserModel).omit({
   id: true,
 });
 
-export const signinUserSchema = createInsertSchema(userModel).pick({
+export const signinUserSchema = createInsertSchema(UserModel).pick({
   email: true,
   password: true,
 });
-
-export default userModel;
