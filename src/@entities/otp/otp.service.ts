@@ -1,7 +1,7 @@
 import { and, eq, gt, gte } from "drizzle-orm";
 
 import { db } from "../../db";
-import BadRequestError from "../../errors/bad-request";
+import { BadRequestError } from "../../errors";
 import { OtpModel } from "./otp.model";
 import { CreateOtpType, VerifyOTPType } from "../../types/otp-types";
 

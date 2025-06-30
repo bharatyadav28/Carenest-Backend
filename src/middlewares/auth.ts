@@ -1,41 +1,17 @@
 import { NextFunction, Request, Response } from "express";
-import BadRequestError from "../errors/bad-request";
+import { BadRequestError } from "../errors";
 import { generateAccessToken, verifyJWTToken } from "../helpers/jwt";
-import { payloadType } from "../types/general-types";
 import { db } from "../db";
 import { and, eq } from "drizzle-orm";
 import { UserModel } from "../db/schema";
 import { getTokenPayload } from "../helpers/utils";
-import NotFoundError from "../errors/not-found";
+import { getAuthUser } from "../@entities/user/user.service";
 
 export const auth = async (req: Request, _: Response, next: NextFunction) => {
   const authHeader = req.headers["authorization"];
-  const accessToken = authHeader && authHeader.split(" ")?.[1];
-  if (!accessToken) {
-    throw new BadRequestError("Access token missing");
-  }
-
-  const payload = verifyJWTToken(accessToken);
-
-  if (payload && typeof payload === "object" && "user" in payload) {
-    const userId = payload.user.id;
-    const existingUser = await db.query.UserModel.findFirst({
-      where: and(eq(UserModel.id, userId), eq(UserModel.isDeleted, false)),
-      columns: {
-        id: true,
-        role: true,
-      },
-    });
-
-    if (!existingUser) {
-      throw new NotFoundError("User not found");
-    }
-
-    req.user = existingUser;
-    next();
-  } else {
-    throw new BadRequestError("Invalid token payload");
-  }
+  const existingUser = getAuthUser(authHeader);
+  req.user = existingUser;
+  next();
 };
 
 export const isGiver = async (
@@ -43,10 +19,9 @@ export const isGiver = async (
   _: Response,
   next: NextFunction
 ) => {
-  const role = req?.user?.role;
-  if (!role || role !== "giver") {
-    throw new BadRequestError("Forbidden:Caregivers Only");
-  }
+  const authHeader = req.headers["authorization"];
+  const existingUser = getAuthUser(authHeader, "giver");
+  req.user = existingUser;
   next();
 };
 
@@ -55,10 +30,9 @@ export const isAdmin = async (
   _: Response,
   next: NextFunction
 ) => {
-  const role = req?.user?.role;
-  if (!role || role !== "admin") {
-    throw new BadRequestError("Forbidden:Admin Only");
-  }
+  const authHeader = req.headers["authorization"];
+  const existingUser = getAuthUser(authHeader, "admin");
+  req.user = existingUser;
   next();
 };
 

@@ -3,16 +3,18 @@ import { Request, Response } from "express";
 import { UserModel } from "./user.model";
 import { db } from "../../db";
 import { comparePassword, hashPassword } from "../../helpers/passwordEncrpt";
-import BadRequestError from "../../errors/bad-request";
+import { BadRequestError, NotFoundError } from "../../errors";
 import { eq, and } from "drizzle-orm";
 import {
   createUser,
   findUserByEmail,
   getUserTokens,
   deleteUser,
+  filterUserRole,
+  getTemporaryToken,
+  getAuthUser,
 } from "./user.service";
 import { generateAndSendOtp, verifyOtp } from "../otp/otp.service";
-import NotFoundError from "../../errors/not-found";
 
 export const signup = async (req: Request, res: Response) => {
   const incomingData = req.cleanBody;
@@ -21,7 +23,7 @@ export const signup = async (req: Request, res: Response) => {
     throw new BadRequestError("Please enter password");
   }
 
-  const userRole = role === "admin" ? "user" : role;
+  const userRole = filterUserRole(role);
 
   const hashedPassword = await hashPassword(password);
   const usersData = {
@@ -126,7 +128,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
   if (type === "account_verification") {
     const verified = await db
       .update(UserModel)
-      .set({ isEmailVerified: true })
+      .set({ isEmailVerified: true, updatedAt: new Date() })
       .where(eq(UserModel.id, user.id))
       .returning();
     if (!verified) {
@@ -136,10 +138,11 @@ export const verifyEmail = async (req: Request, res: Response) => {
 
   let responseData = {};
   if (type === "account_verification" || type === "two_step_auth") {
-    const { accessToken, refreshToken } = await getUserTokens(user.id);
+    const { accessToken, refreshToken } = getUserTokens(user.id);
     responseData = { accessToken, refreshToken };
   } else if (type === "password_reset") {
-    responseData = { userId: user.id };
+    const token = getTemporaryToken(user.id);
+    responseData = { token };
   }
 
   return res.status(200).json({
@@ -166,7 +169,7 @@ export const googleAuth = async (req: Request, res: Response) => {
     throw new BadRequestError(`Google login verification failed`);
   }
 
-  const userRole = role === "admin" ? "user" : role;
+  const userRole = filterUserRole(role);
   const data = await response.json();
   const { name, email, email_verified } = data;
   const usersData = {
@@ -209,5 +212,52 @@ export const googleAuth = async (req: Request, res: Response) => {
     data: {
       ...responseData,
     },
+  });
+};
+
+export const forgotPassword = async (req: Request, res: Response) => {
+  const { email, role } = req.body;
+  if (!email) {
+    throw new BadRequestError("Please enter your email address");
+  }
+
+  const userRole = filterUserRole(role);
+
+  const existingUser = await findUserByEmail(email, userRole);
+  if (!existingUser) {
+    throw new BadRequestError("No user with this email address exists");
+  }
+
+  await generateAndSendOtp({
+    userId: existingUser.id,
+    name: existingUser.name || "user",
+    email,
+    type: "password_reset",
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: "Otp sent to registered email address",
+  });
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+  const { password, role } = req.body;
+  const authHeader = req.headers["authorization"];
+  const existingUser = await getAuthUser(authHeader, role, "temporary");
+  const hashedPassword = await hashPassword(password);
+
+  const updatedUser = await db
+    .update(UserModel)
+    .set({ password: hashedPassword, updatedAt: new Date() })
+    .where(eq(UserModel.id, existingUser.id))
+    .returning();
+  if (!updatedUser) {
+    throw new BadRequestError("Password updation failed");
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "Password updated successfully",
   });
 };

@@ -46,6 +46,8 @@ export const verifyJWTToken = (token: string, tokenType?: string) => {
   const secret =
     tokenType === "refresh"
       ? process.env.REFRESH_SECRET
+      : tokenType === "temporary"
+      ? process.env.TEMP_SECRET
       : process.env.ACCESS_SECRET;
 
   if (secret) {

@@ -3,7 +3,7 @@ import NotFoundError from "./not-found";
 import UnauthenticatedError from "./unauthenticated";
 import UnAuthorizedError from "./unauthorized";
 
-module.exports = {
+export {
   BadRequestError,
   NotFoundError,
   UnauthenticatedError,
