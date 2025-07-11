@@ -13,6 +13,7 @@ import {
   filterUserRole,
   getTemporaryToken,
   getAuthUser,
+  updatePassword,
 } from "./user.service";
 import { generateAndSendOtp, verifyOtp } from "../otp/otp.service";
 
@@ -56,7 +57,7 @@ export const signup = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       success: true,
-      message: "Signup successfully",
+      message: "Otp sent to registered email",
       data: {
         userId: user.id,
       },
@@ -67,10 +68,16 @@ export const signup = async (req: Request, res: Response) => {
 };
 
 export const signin = async (req: Request, res: Response) => {
-  const { email, password: candidatePassword } = req.body;
+  const { email, password: candidatePassword, role } = req.body;
+
+  const userRole = role || "user";
 
   const existingUser = await db.query.UserModel.findFirst({
-    where: and(eq(UserModel.email, email), eq(UserModel.isDeleted, false)),
+    where: and(
+      eq(UserModel.email, email),
+      eq(UserModel.isDeleted, false),
+      eq(UserModel.role, userRole)
+    ),
     columns: {
       id: true,
       password: true,
@@ -238,6 +245,9 @@ export const forgotPassword = async (req: Request, res: Response) => {
   return res.status(200).json({
     success: true,
     message: "Otp sent to registered email address",
+    data: {
+      userId: existingUser.id,
+    },
   });
 };
 
@@ -255,6 +265,26 @@ export const resetPassword = async (req: Request, res: Response) => {
   if (!updatedUser) {
     throw new BadRequestError("Password updation failed");
   }
+
+  return res.status(200).json({
+    success: true,
+    message: "Password updated successfully",
+  });
+};
+
+export const changePassword = async (req: Request, res: Response) => {
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.user.id;
+
+  if (!currentPassword || !newPassword) {
+    throw new BadRequestError("Please provide both current and new password");
+  }
+
+  await updatePassword({
+    currentPassword,
+    newPassword,
+    userId,
+  });
 
   return res.status(200).json({
     success: true,

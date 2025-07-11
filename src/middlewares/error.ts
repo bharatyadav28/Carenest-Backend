@@ -96,7 +96,7 @@ const errorMiddleware = (
 
   return res.status(customError.statusCode).json({
     success: false,
-    message: customError.message,
+    message: customError.message.toLowerCase(),
   });
 };
 

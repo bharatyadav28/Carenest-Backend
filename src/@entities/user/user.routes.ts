@@ -7,9 +7,11 @@ import {
   googleAuth,
   forgotPassword,
   resetPassword,
+  changePassword,
 } from "./user.controller";
 import { validateData } from "../../middlewares/validation";
 import { createUserSchema, signinUserSchema } from "./user.model";
+import { auth } from "../../middlewares/auth";
 
 const userRouter = express.Router();
 
@@ -19,6 +21,7 @@ userRouter.route("/verify-email").post(verifyEmail);
 userRouter.route("/google-auth").post(googleAuth);
 
 userRouter.route("/forgot-password").post(forgotPassword);
-userRouter.route("/reset-password").post(resetPassword);
+userRouter.route("/reset-password").put(resetPassword);
+userRouter.route("/change-password").put(auth, changePassword);
 
 export default userRouter;

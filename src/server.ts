@@ -11,7 +11,7 @@ const startServer = async () => {
   try {
     // Basic database connectivity check
     await db.execute("SELECT 1");
-    console.log("Database connection successful");
+    console.log("Connected to database successfully!!!");
 
     // Start the server
     const port = process.env.PORT || 4000;

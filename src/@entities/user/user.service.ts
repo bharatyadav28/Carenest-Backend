@@ -11,6 +11,7 @@ import {
   generateTempToken,
   verifyJWTToken,
 } from "../../helpers/jwt";
+import { comparePassword, hashPassword } from "../../helpers/passwordEncrpt";
 
 export const findUserByEmail = async (email: string, role?: RoleType) => {
   const userRole = role || "user";
@@ -95,5 +96,49 @@ export const getAuthUser = async (
     return existingUser;
   } else {
     throw new BadRequestError("Invalid token payload");
+  }
+};
+
+interface updatePasswordParam {
+  currentPassword: string;
+  newPassword: string;
+  userId: string;
+}
+export const updatePassword = async ({
+  currentPassword,
+  newPassword,
+  userId,
+}: updatePasswordParam) => {
+  const existingUser = await db.query.UserModel.findFirst({
+    where: and(eq(UserModel.id, userId), eq(UserModel.isDeleted, false)),
+    columns: {
+      id: true,
+      password: true,
+    },
+  });
+  if (!existingUser) {
+    throw new NotFoundError("No such user exists");
+  }
+
+  let isPasswordMatched = false;
+
+  if (existingUser.password) {
+    isPasswordMatched = await comparePassword(
+      currentPassword,
+      existingUser.password
+    );
+  }
+  if (!isPasswordMatched) {
+    throw new BadRequestError("Current password is incorrect");
+  }
+
+  const hashedPassword = await hashPassword(newPassword);
+  const updatedUser = await db
+    .update(UserModel)
+    .set({ password: hashedPassword, updatedAt: new Date() })
+    .where(eq(UserModel.id, existingUser.id))
+    .returning();
+  if (!updatedUser) {
+    throw new BadRequestError("Password updation failed");
   }
 };

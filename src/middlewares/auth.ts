@@ -9,7 +9,8 @@ import { getAuthUser } from "../@entities/user/user.service";
 
 export const auth = async (req: Request, _: Response, next: NextFunction) => {
   const authHeader = req.headers["authorization"];
-  const existingUser = getAuthUser(authHeader);
+  const existingUser = await getAuthUser(authHeader);
+  console.log("Hi");
   req.user = existingUser;
   next();
 };
@@ -20,7 +21,7 @@ export const isGiver = async (
   next: NextFunction
 ) => {
   const authHeader = req.headers["authorization"];
-  const existingUser = getAuthUser(authHeader, "giver");
+  const existingUser = await getAuthUser(authHeader, "giver");
   req.user = existingUser;
   next();
 };
@@ -31,7 +32,7 @@ export const isAdmin = async (
   next: NextFunction
 ) => {
   const authHeader = req.headers["authorization"];
-  const existingUser = getAuthUser(authHeader, "admin");
+  const existingUser = await getAuthUser(authHeader, "admin");
   req.user = existingUser;
   next();
 };

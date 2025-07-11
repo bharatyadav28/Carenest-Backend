@@ -1,6 +1,6 @@
 CREATE TYPE "public"."role" AS ENUM('user', 'giver', 'admin');--> statement-breakpoint
 CREATE TYPE "public"."type" AS ENUM('account_verification', 'password_reset', 'two_step_auth');--> statement-breakpoint
-CREATE TABLE "test-user4" (
+CREATE TABLE "user" (
 	"id" varchar(21) PRIMARY KEY NOT NULL,
 	"name" varchar(255),
 	"email" varchar(255) NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE "test-user4" (
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	"is_deleted" boolean DEFAULT false,
 	"deleted_at" timestamp,
-	CONSTRAINT "valid_email" CHECK ("test-user4"."email" ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$')
+	CONSTRAINT "valid_email" CHECK ("user"."email" ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$')
 );
 --> statement-breakpoint
 CREATE TABLE "otp" (
@@ -27,4 +27,4 @@ CREATE TABLE "otp" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-ALTER TABLE "otp" ADD CONSTRAINT "otp_userId_test-user4_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."test-user4"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "otp" ADD CONSTRAINT "otp_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;

@@ -15,7 +15,7 @@ import { timestamps } from "../../helpers/columns";
 export const roleEnum = pgEnum("role", ["user", "giver", "admin"]);
 
 export const UserModel = pgTable(
-  "test-user4",
+  "user",
   {
     id: varchar("id", { length: 21 })
       .primaryKey()
@@ -37,6 +37,8 @@ export const UserModel = pgTable(
     gender: varchar("gender", { length: 255 }),
 
     role: roleEnum().default("user"),
+
+    avatar: varchar("avatar", { length: 255 }),
 
     ...timestamps,
   },

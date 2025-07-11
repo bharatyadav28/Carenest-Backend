@@ -1,6 +1,6 @@
 {
-  "id": "a04ae4ca-991a-4b65-b649-d4e4a731abd0",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "de8af6d3-9b2d-4bcc-98ea-d3b2407abb96",
+  "prevId": "a04ae4ca-991a-4b65-b649-d4e4a731abd0",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -64,6 +64,12 @@
           "primaryKey": false,
           "notNull": false,
           "default": "'user'"
+        },
+        "avatar": {
+          "name": "avatar",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
