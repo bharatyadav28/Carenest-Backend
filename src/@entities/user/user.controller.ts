@@ -138,6 +138,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
       .set({ isEmailVerified: true, updatedAt: new Date() })
       .where(eq(UserModel.id, user.id))
       .returning();
+    console.log("verified: ", verified);
     if (!verified) {
       throw new Error("Email verification failed");
     }
@@ -230,7 +231,16 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
   const userRole = filterUserRole(role);
 
-  const existingUser = await findUserByEmail(email, userRole);
+  const existingUser = await db.query.UserModel.findFirst({
+    where: and(
+      eq(UserModel.email, email),
+      eq(UserModel.isDeleted, false),
+      eq(UserModel.role, userRole),
+      eq(UserModel.isEmailVerified, true)
+    ),
+    columns: { id: true, name: true },
+  });
+
   if (!existingUser) {
     throw new BadRequestError("No user with this email address exists");
   }

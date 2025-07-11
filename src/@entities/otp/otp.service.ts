@@ -4,6 +4,7 @@ import { db } from "../../db";
 import { BadRequestError } from "../../errors";
 import { OtpModel } from "./otp.model";
 import { CreateOtpType, VerifyOTPType } from "../../types/otp-types";
+import sendEmail from "../../helpers/sendEmail";
 
 export const generateAndSendOtp = async ({
   userId,
@@ -40,7 +41,39 @@ export const generateAndSendOtp = async ({
 
   console.log("OTP: ", result);
 
+  const message = `
+    <div style="font-family: 'Arial', sans-serif; text-align: center; background-color: #f4f4f4; margin-top: 15px; padding: 0;
+    padding-bottom:10px;  ">
+
+      <div style="max-width: 600px; margin: 30px auto; background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);">
+        <h1 style="color: #333333;">Hey ${name}! </h1>
+        <p style="color: #666666;">Your verification code is:</p>
+        <p style="font-size: 24px; font-weight: bold; color: #009688; margin: 0;">${code}</p>
+          <p style="color: #666666;">
+         This otp will expire in 10 minutes.
+         </p>
+        <p style="color: #666666;">
+          If you did not request an otp , please ignore this email.
+        </p>
+      </div>
+
+      <div style="color: #888888">
+        <p style="margin-bottom: 10px;">Regards, <span style="color:#b19cd9;">Team Carenest</span></p>
+      </div>
+    
+    </div>`;
+
   //   send email
+  await sendEmail({
+    to: email,
+    subject:
+      type === "account_verification"
+        ? "Account Verification"
+        : type === "two_step_auth"
+        ? "Two Step Authentication"
+        : "Password Reset",
+    html: message,
+  });
 };
 
 export const verifyOtp = async ({ code, userId, type }: VerifyOTPType) => {
