@@ -36,7 +36,7 @@ export const UserModel = pgTable(
 
     gender: varchar("gender", { length: 255 }),
 
-    role: roleEnum().default("user"),
+    role: roleEnum("role").default("user"),
 
     avatar: varchar("avatar", { length: 255 }),
 

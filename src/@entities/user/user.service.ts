@@ -26,7 +26,7 @@ export const findUserByEmail = async (email: string, role?: RoleType) => {
   return existingUser;
 };
 
-export const createUser = async (userData: CreateUserType) => {
+export const createUser = async (userData: any) => {
   const user = await db.insert(UserModel).values(userData).returning();
   if (!user || user?.length === 0) {
     throw Error("Signup failed");

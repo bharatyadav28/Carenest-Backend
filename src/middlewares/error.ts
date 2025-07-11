@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import multer from "multer";
-import { z, ZodError, ZodIssue } from "zod";
+import { z } from "zod";
 import { DrizzleError } from "drizzle-orm";
 
 interface CustomError extends Error {
@@ -38,9 +38,9 @@ const errorMiddleware = (
   }
 
   // Handle Zod validation errors (Drizzle Pod uses Zod)
-  if (error instanceof ZodError) {
-    customError.message = error.errors
-      .map((err: ZodIssue) => `${err.path.join(".")} is ${err.message}`)
+  if (error instanceof z.ZodError) {
+    customError.message = error.issues
+      .map((issue) => `${issue.path.join(".")} is ${issue.message}`)
       .join(", ");
     customError.statusCode = 400; // Bad Request
   }
