@@ -138,7 +138,6 @@ export const verifyEmail = async (req: Request, res: Response) => {
       .set({ isEmailVerified: true, updatedAt: new Date() })
       .where(eq(UserModel.id, user.id))
       .returning();
-    console.log("verified: ", verified);
     if (!verified) {
       throw new Error("Email verification failed");
     }

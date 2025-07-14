@@ -21,12 +21,6 @@ const sendEmail = async ({ to, subject, html, attachments }: emailParams) => {
       pass: process.env.ETHERIAL_PASS!,
     },
   });
-  console.log(
-    "g",
-    process.env.ETHERIAL_USER!,
-    process.env.GMAIL_USER!,
-    process.env.GMAIL_PASS!
-  );
 
   const prodTransporter = nodemailer.createTransport({
     service: "gmail",
@@ -48,7 +42,7 @@ const sendEmail = async ({ to, subject, html, attachments }: emailParams) => {
   );
 
   const mailOptions: nodemailer.SendMailOptions = {
-    from: '"Ravallusion" <ravallusionacademy@gmail.com>',
+    from: '"Carenest" <carenest@gmail.com>',
     to,
     subject,
     html,

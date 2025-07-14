@@ -10,7 +10,6 @@ import { getAuthUser } from "../@entities/user/user.service";
 export const auth = async (req: Request, _: Response, next: NextFunction) => {
   const authHeader = req.headers["authorization"];
   const existingUser = await getAuthUser(authHeader);
-  console.log("Hi");
   req.user = existingUser;
   next();
 };

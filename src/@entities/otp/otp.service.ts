@@ -39,8 +39,6 @@ export const generateAndSendOtp = async ({
     throw new BadRequestError("Otp creation failed");
   }
 
-  console.log("OTP: ", result);
-
   const message = `
     <div style="font-family: 'Arial', sans-serif; text-align: center; background-color: #f4f4f4; margin-top: 15px; padding: 0;
     padding-bottom:10px;  ">

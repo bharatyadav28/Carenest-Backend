@@ -41,6 +41,8 @@ import { userRouter } from "./@entities/user";
 import { getNewAccessToken } from "./middlewares/auth";
 
 app.use("/api/v1/user", userRouter);
+app.use("/api/v1/giver", userRouter);
+
 app.get("/api/v1/new-access-token", getNewAccessToken);
 
 app.use(pageNotFound);
