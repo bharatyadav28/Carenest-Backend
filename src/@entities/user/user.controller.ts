@@ -14,6 +14,7 @@ import {
   getTemporaryToken,
   getAuthUser,
   updatePassword,
+  fetchProfileDetails,
 } from "./user.service";
 import { generateAndSendOtp, verifyOtp } from "../otp/otp.service";
 
@@ -298,5 +299,17 @@ export const changePassword = async (req: Request, res: Response) => {
   return res.status(200).json({
     success: true,
     message: "Password updated successfully",
+  });
+};
+
+export const getProfile = async (req: Request, res: Response) => {
+  const userId = req.user._id;
+  const user = await fetchProfileDetails(userId);
+  return res.status(200).json({
+    success: true,
+    message: "Profile details fetched successfully",
+    data: {
+      user,
+    },
   });
 };

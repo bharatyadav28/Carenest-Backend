@@ -54,6 +54,14 @@ export const createUserSchema = createInsertSchema(UserModel).omit({
   id: true,
 });
 
+export const updateUserSchema = createInsertSchema(UserModel).pick({
+  email: true,
+  name: true,
+  gender: true,
+  address: true,
+  mobile: true,
+});
+
 export const signinUserSchema = createInsertSchema(UserModel).pick({
   email: true,
   password: true,

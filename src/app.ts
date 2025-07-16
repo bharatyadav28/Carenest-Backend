@@ -38,10 +38,11 @@ app.get("/", (_, res: Response) =>
 );
 
 import { userRouter } from "./@entities/user";
-import { getNewAccessToken } from "./middlewares/auth";
+import { getNewAccessToken, isGiver } from "./middlewares/auth";
+import { giverRouter } from "./@entities/giver";
 
 app.use("/api/v1/user", userRouter);
-app.use("/api/v1/giver", userRouter);
+app.use("/api/v1/giver", isGiver, giverRouter);
 
 app.get("/api/v1/new-access-token", getNewAccessToken);
 

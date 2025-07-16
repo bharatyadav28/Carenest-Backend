@@ -1,3 +1,3 @@
-import userRouter from "./giver.routes";
+import giverRouter from "./giver.routes";
 
-export { userRouter };
+export { giverRouter };

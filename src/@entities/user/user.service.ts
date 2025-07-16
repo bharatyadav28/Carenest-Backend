@@ -2,7 +2,7 @@ import { eq, and } from "drizzle-orm";
 
 import { db } from "../../db";
 import { UserModel } from "./user.model";
-import { CreateUserType, RoleType } from "../../types/user-types";
+import { UpdateUserType, RoleType } from "../../types/user-types";
 import { getTokenPayload } from "../../helpers/utils";
 import { BadRequestError, NotFoundError } from "../../errors";
 import {
@@ -140,5 +140,52 @@ export const updatePassword = async ({
     .returning();
   if (!updatedUser) {
     throw new BadRequestError("Password updation failed");
+  }
+};
+
+export const fetchProfileDetails = async (userId: string) => {
+  const user = await db.query.UserModel.findFirst({
+    where: eq(UserModel.id, userId),
+    columns: {
+      id: true,
+      name: true,
+      email: true,
+      address: true,
+      mobile: true,
+      avatar: true,
+    },
+  });
+
+  if (!user) {
+    throw new NotFoundError("No user with this is exists");
+  }
+
+  return user;
+};
+
+export const updateProfileDetails = async (
+  userId: string,
+  updatedData: UpdateUserType
+) => {
+  const updatedUser = await db
+    .update(UserModel)
+    .set(updatedData)
+    .where(eq(UserModel.id, userId))
+    .returning();
+
+  if (updatedUser.length === 0) {
+    throw new Error("Profile updation failed");
+  }
+};
+
+export const updateUserAvatar = async (userId: string, avatar: string) => {
+  const updatedUser = await db
+    .update(UserModel)
+    .set({ avatar: avatar ? avatar : null })
+    .where(eq(UserModel.id, userId))
+    .returning();
+
+  if (updatedUser.length === 0) {
+    throw new Error("Profile image updation failed");
   }
 };

@@ -94,9 +94,13 @@ const errorMiddleware = (
     customError.statusCode = 404; // Not Found
   }
 
+  const formattedMessage =
+    customError.message.charAt(0).toUpperCase() +
+    customError.message.slice(1).toLowerCase();
+
   return res.status(customError.statusCode).json({
     success: false,
-    message: customError.message.toLowerCase(),
+    message: formattedMessage,
   });
 };
 
