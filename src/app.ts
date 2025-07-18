@@ -43,12 +43,16 @@ import { giverRouter } from "./@entities/giver";
 import { jobProfileRouter } from "./@entities/jobProfile";
 import { aboutRouter } from "./@entities/about";
 import { whyChooseMeRouter } from "./@entities/whyChooseMe";
+import { serviceRouter } from "./@entities/service";
+import { myServiceRouter } from "./@entities/myService";
 
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/giver", isGiver, giverRouter);
 app.use("/api/v1/job-profile", isGiver, jobProfileRouter);
 app.use("/api/v1/about", isGiver, aboutRouter);
 app.use("/api/v1/why-choose-me", isGiver, whyChooseMeRouter);
+app.use("/api/v1/service", serviceRouter);
+app.use("/api/v1/my-service", isGiver, myServiceRouter);
 
 app.get("/api/v1/new-access-token", getNewAccessToken);
 

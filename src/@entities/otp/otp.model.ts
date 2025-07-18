@@ -1,10 +1,4 @@
-import {
-  varchar,
-  pgEnum,
-  pgTable,
-  timestamp,
-  boolean,
-} from "drizzle-orm/pg-core";
+import { varchar, pgEnum, pgTable, timestamp } from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
 
 import { min_timestamps } from "../../helpers/columns";
