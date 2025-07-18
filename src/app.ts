@@ -42,11 +42,13 @@ import { getNewAccessToken, isGiver } from "./middlewares/auth";
 import { giverRouter } from "./@entities/giver";
 import { jobProfileRouter } from "./@entities/jobProfile";
 import { aboutRouter } from "./@entities/about";
+import { whyChooseMeRouter } from "./@entities/whyChooseMe";
 
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/giver", isGiver, giverRouter);
 app.use("/api/v1/job-profile", isGiver, jobProfileRouter);
 app.use("/api/v1/about", isGiver, aboutRouter);
+app.use("/api/v1/why-choose-me", isGiver, whyChooseMeRouter);
 
 app.get("/api/v1/new-access-token", getNewAccessToken);
 

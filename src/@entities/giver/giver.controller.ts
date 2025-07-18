@@ -7,9 +7,7 @@ import {
   updatePassword,
   updateProfileDetails,
   updateUserAvatar,
-} from "../user/user.service";
-import { UserModel } from "../user";
-import { db } from "../../db";
+} from "../user";
 
 export const changePassword = async (req: Request, res: Response) => {
   const { currentPassword, newPassword } = req.body;

@@ -15,6 +15,20 @@
       "when": 1752833588996,
       "tag": "0001_light_speed",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1752835269763,
+      "tag": "0002_fuzzy_speed",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1752836917430,
+      "tag": "0003_simple_the_fury",
+      "breakpoints": true
     }
   ]
 }

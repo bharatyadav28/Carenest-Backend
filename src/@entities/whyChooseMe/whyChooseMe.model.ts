@@ -1,11 +1,11 @@
-import { pgTable, varchar } from "drizzle-orm/pg-core";
+import { varchar } from "drizzle-orm/pg-core";
+import { pgTable } from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
-
 import { UserModel } from "../user";
 import { min_timestamps } from "../../helpers/columns";
 import { createInsertSchema } from "drizzle-zod";
 
-export const AboutModel = pgTable("about", {
+export const whyChooseMeModel = pgTable("why_choose_me", {
   id: varchar("id", { length: 21 })
     .primaryKey()
     .notNull()
@@ -15,12 +15,16 @@ export const AboutModel = pgTable("about", {
     .notNull()
     .references(() => UserModel.id),
 
-  content: varchar("content", { length: 1000 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+
+  description: varchar("description", { length: 1000 }).notNull(),
 
   ...min_timestamps,
 });
 
-export const createAboutSchema = createInsertSchema(AboutModel).omit({
+export const whyChooseMeCreateSchema = createInsertSchema(
+  whyChooseMeModel
+).omit({
   id: true,
   userId: true,
 });
