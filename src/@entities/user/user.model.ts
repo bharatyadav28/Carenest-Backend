@@ -5,7 +5,6 @@ import {
   text,
   boolean,
   pgEnum,
-  timestamp,
   check,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";

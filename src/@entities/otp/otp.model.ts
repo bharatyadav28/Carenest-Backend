@@ -23,7 +23,7 @@ export const OtpModel = pgTable("otp", {
     .notNull()
     .$defaultFn(() => nanoid(21)),
 
-  userId: varchar("userId", { length: 21 })
+  userId: varchar("user_id", { length: 21 })
     .notNull()
     .references(() => UserModel.id),
 

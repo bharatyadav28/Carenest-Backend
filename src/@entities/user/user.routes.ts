@@ -11,7 +11,7 @@ import {
 } from "./user.controller";
 import { validateData } from "../../middlewares/validation";
 import { createUserSchema, signinUserSchema } from "./user.model";
-import { auth, isGiver } from "../../middlewares/auth";
+import { isGiver } from "../../middlewares/auth";
 
 const userRouter = express.Router();
 
