@@ -40,11 +40,13 @@ app.get("/", (_, res: Response) =>
 import { userRouter } from "./@entities/user";
 import { getNewAccessToken, isGiver } from "./middlewares/auth";
 import { giverRouter } from "./@entities/giver";
-import jobProfileRouter from "./@entities/jobProfile/jobProfile.routes";
+import { jobProfileRouter } from "./@entities/jobProfile";
+import { aboutRouter } from "./@entities/about";
 
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/giver", isGiver, giverRouter);
 app.use("/api/v1/job-profile", isGiver, jobProfileRouter);
+app.use("/api/v1/about", isGiver, aboutRouter);
 
 app.get("/api/v1/new-access-token", getNewAccessToken);
 

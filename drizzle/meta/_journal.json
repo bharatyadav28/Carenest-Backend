@@ -8,6 +8,13 @@
       "when": 1752825379741,
       "tag": "0000_boring_scourge",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1752833588996,
+      "tag": "0001_light_speed",
+      "breakpoints": true
     }
   ]
 }
