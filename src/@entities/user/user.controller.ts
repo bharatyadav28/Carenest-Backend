@@ -1,10 +1,11 @@
 import { Request, Response } from "express";
+import { eq, and } from "drizzle-orm";
 
 import { UserModel } from "./user.model";
 import { db } from "../../db";
 import { comparePassword, hashPassword } from "../../helpers/passwordEncrpt";
 import { BadRequestError, NotFoundError } from "../../errors";
-import { eq, and } from "drizzle-orm";
+import { generateAndSendOtp, verifyOtp } from "../otp/otp.service";
 import {
   createUser,
   findUserByEmail,
@@ -16,7 +17,6 @@ import {
   updatePassword,
   fetchProfileDetails,
 } from "./user.service";
-import { generateAndSendOtp, verifyOtp } from "../otp/otp.service";
 
 export const signup = async (req: Request, res: Response) => {
   const incomingData = req.cleanBody;
@@ -68,6 +68,38 @@ export const signup = async (req: Request, res: Response) => {
   throw new BadRequestError("User with this email already exists");
 };
 
+export const resendOTPSignup = async (req: Request, res: Response) => {
+  const { userId } = req.body;
+  if (!userId) {
+    throw new BadRequestError("Please provide userId");
+  }
+
+  const user = await db.query.UserModel.findFirst({
+    where: and(eq(UserModel.id, userId), eq(UserModel.isEmailVerified, false)),
+    columns: { id: true, name: true, email: true },
+  });
+  if (!user) {
+    throw new NotFoundError(
+      "No user exists with this id or email is already verified"
+    );
+  }
+
+  await generateAndSendOtp({
+    userId: user.id,
+    name: user.name || "user",
+    email: user.email,
+    type: "account_verification",
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: "Otp sent to registered email",
+    data: {
+      userId: user.id,
+    },
+  });
+};
+
 export const signin = async (req: Request, res: Response) => {
   const { email, password: candidatePassword, role } = req.body;
 
@@ -101,18 +133,14 @@ export const signin = async (req: Request, res: Response) => {
     throw new BadRequestError("Password is incorrect");
   }
 
-  await generateAndSendOtp({
-    userId: existingUser.id,
-    name: existingUser.name || "user",
-    email,
-    type: "two_step_auth",
-  });
+  const { accessToken, refreshToken } = getUserTokens(existingUser.id);
 
   return res.status(200).json({
     success: true,
-    message: "Otp sent to registered email",
+    message: "Signin successfully",
     data: {
-      userId: existingUser.id,
+      accessToken,
+      refreshToken,
     },
   });
 };
