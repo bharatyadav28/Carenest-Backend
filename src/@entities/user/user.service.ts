@@ -12,6 +12,7 @@ import {
   verifyJWTToken,
 } from "../../helpers/jwt";
 import { comparePassword, hashPassword } from "../../helpers/passwordEncrpt";
+import { s3Uploadv4 } from "../../helpers/s3";
 
 export const findUserByEmail = async (email: string, role?: RoleType) => {
   const userRole = role || "user";
@@ -180,14 +181,35 @@ export const updateProfileDetails = async (
   }
 };
 
-export const updateUserAvatar = async (userId: string, avatar: string) => {
+export const updateUserAvatar = async (
+  userId: string,
+  file: Express.Multer.File
+) => {
+  if (!file || !(file?.mimetype.split("/")[0] === "image")) {
+    throw new BadRequestError("Please upload an image");
+  }
+
+  const result = await s3Uploadv4(file, "profile");
+
   const updatedUser = await db
     .update(UserModel)
-    .set({ avatar: avatar ? avatar : null })
+    .set({ avatar: result ? result.Key : null })
     .where(eq(UserModel.id, userId))
     .returning();
 
   if (updatedUser.length === 0) {
     throw new Error("Profile image updation failed");
+  }
+};
+
+export const removeUserAvatar = async (userId: string) => {
+  const updatedUser = await db
+    .update(UserModel)
+    .set({ avatar: null })
+    .where(eq(UserModel.id, userId))
+    .returning();
+
+  if (updatedUser.length === 0) {
+    throw new Error("Profile image removed successfully");
   }
 };

@@ -4,6 +4,7 @@ import { BadRequestError } from "../../errors";
 import {
   deleteUser,
   fetchProfileDetails,
+  removeUserAvatar,
   updatePassword,
   updateProfileDetails,
   updateUserAvatar,
@@ -56,14 +57,28 @@ export const updateProfile = async (req: Request, res: Response) => {
 };
 
 export const updateAvatar = async (req: Request, res: Response) => {
-  const { avatar } = req.body;
   const userId = req.user.id;
+  const file = req.file;
 
-  await updateUserAvatar(userId, avatar);
+  if (!file) {
+    throw new BadRequestError("Please upload a file");
+  }
+  await updateUserAvatar(userId, file);
 
   return res.status(200).json({
     success: true,
     message: "Profile image updated successfully",
+  });
+};
+
+export const removeAvatar = async (req: Request, res: Response) => {
+  const userId = req.user.id;
+
+  await removeUserAvatar(userId);
+
+  return res.status(200).json({
+    success: true,
+    message: "Profile image removed successfully",
   });
 };
 
