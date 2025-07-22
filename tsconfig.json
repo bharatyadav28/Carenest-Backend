@@ -18,6 +18,6 @@
     "noImplicitAny": true, // Raise error on expressions with implicit 'any' type
     "removeComments": true // Remove comments in output files
   },
-  "include": ["src/**/*"], // Files to include
+  "include": ["src"], // Files to include
   "exclude": ["node_modules", "dist"] // Files to exclude
 }

@@ -1,6 +1,6 @@
 import { Request } from "express";
 import multer, { FileFilterCallback } from "multer";
-import aws from "aws-sdk";
+import * as aws from "aws-sdk";
 import sharp from "sharp";
 
 import { generateUniqueId } from "./utils";
