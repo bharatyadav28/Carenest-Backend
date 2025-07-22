@@ -47,6 +47,9 @@ import { serviceRouter } from "./@entities/service";
 import { myServiceRouter } from "./@entities/myService";
 import { documentRouter } from "./@entities/document";
 import { planRouter } from "./@entities/plan";
+import { trimStringFields } from "./middlewares/trim";
+
+app.use("/api", trimStringFields);
 
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/giver", isGiver, giverRouter);
