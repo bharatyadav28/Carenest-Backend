@@ -58,7 +58,7 @@ app.use("/api/v1/about", isGiver, aboutRouter);
 app.use("/api/v1/why-choose-me", isGiver, whyChooseMeRouter);
 app.use("/api/v1/service", serviceRouter);
 app.use("/api/v1/my-service", isGiver, myServiceRouter);
-// app.use("/api/v1/document", documentRouter);
+app.use("/api/v1/document", documentRouter);
 app.use("/api/v1/plan", planRouter);
 
 app.get("/api/v1/new-access-token", getNewAccessToken);

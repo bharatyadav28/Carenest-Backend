@@ -6,7 +6,7 @@
     "dev": "tsc --noEmit && tsx watch src/server.ts",
     "dev:watch": "concurrently \"tsc --noEmit --watch\" \"tsx watch src/server.ts\"",
     "start": "node dist/server.js",
-    "build": "tsc",
+    "build": "NODE_OPTIONS='--max-old-space-size=2048' tsc",
     "migrate:generate": "npx drizzle-kit generate",
     "migrate:apply": "npx drizzle-kit migrate",
     "migrate:dev": "npm run migrate:generate && npm run migrate:apply"
