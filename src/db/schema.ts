@@ -6,7 +6,7 @@ export { whyChooseMeModel } from "../@entities/whyChooseMe/whyChooseMe.model";
 export { ServiceModel } from "../@entities/service/service.model";
 export { MyServiceModel } from "../@entities/myService/myService.model";
 export { PlanModel } from "../@entities/plan/plan.model";
-export {
-  DocumentModel,
-  docTypeEnum,
-} from "../@entities/document/document.model";
+// export {
+//   DocumentModel,
+//   docTypeEnum,
+// } from "../@entities/document/document.model";
