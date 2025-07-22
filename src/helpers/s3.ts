@@ -1,6 +1,6 @@
 import { Request } from "express";
 import multer, { FileFilterCallback } from "multer";
-import aws from "aws-sdk";
+import S3 from "aws-sdk/clients/s3";
 import sharp from "sharp";
 
 import { generateUniqueId } from "./utils";
@@ -12,7 +12,7 @@ const bucketName = process.env.AWS_BUCKET_NAME;
 
 const isBucketConfigured =
   accessKeyId && secretAccessKey && region && bucketName;
-const s3 = new aws.S3({
+const s3 = new S3({
   accessKeyId,
   secretAccessKey,
   region,
