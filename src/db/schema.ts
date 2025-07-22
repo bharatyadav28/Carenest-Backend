@@ -6,3 +6,4 @@ export * from "../@entities/whyChooseMe/whyChooseMe.model";
 export * from "../@entities/service/service.model";
 export * from "../@entities/myService/myService.model";
 export * from "../@entities/plan/plan.model";
+export * from "../@entities/document/document.model";

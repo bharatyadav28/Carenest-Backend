@@ -8,6 +8,8 @@ import {
   updateProfileDetails,
   updateUserAvatar,
 } from "../user";
+import { s3Uploadv4 } from "../../helpers/s3";
+import { cdnURL } from "../../helpers/utils";
 
 export const changePassword = async (req: Request, res: Response) => {
   const { currentPassword, newPassword } = req.body;

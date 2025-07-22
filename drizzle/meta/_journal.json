@@ -57,6 +57,13 @@
       "when": 1753096899905,
       "tag": "0007_furry_tempest",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1753164518106,
+      "tag": "0008_lonely_swarm",
+      "breakpoints": true
     }
   ]
 }

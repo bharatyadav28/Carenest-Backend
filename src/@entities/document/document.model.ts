@@ -4,13 +4,9 @@ import { nanoid } from "nanoid";
 import { UserModel } from "../user";
 import { createInsertSchema } from "drizzle-zod";
 
-export const docTypeEnum = pgEnum("docType", [
-  "resume",
-  "work_permit",
-  "admin",
-]);
+export const docTypeEnum = pgEnum("docType", ["resume", "work_permit"]);
 
-export const documentModel = pgTable("document", {
+export const DocumentModel = pgTable("document", {
   id: varchar("id", { length: 21 })
     .primaryKey()
     .notNull()
@@ -27,7 +23,7 @@ export const documentModel = pgTable("document", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const createDocumentSchema = createInsertSchema(documentModel).omit({
+export const createDocumentSchema = createInsertSchema(DocumentModel).omit({
   id: true,
   userId: true,
   createdAt: true,
