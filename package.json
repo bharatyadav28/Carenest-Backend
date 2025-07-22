@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "tsc --noEmit && tsx watch src/server.ts",
     "dev:watch": "concurrently \"tsc --noEmit --watch\" \"tsx watch src/server.ts\"",
-    "start": "tsc --diagnostics",
+    "start": "node dist/server.js",
+    "test": "tsc --diagnostics",
     "build": "NODE_OPTIONS='--max-old-space-size=4096' tsc",
     "migrate:generate": "npx drizzle-kit generate",
     "migrate:apply": "npx drizzle-kit migrate",
