@@ -6,8 +6,6 @@ import { getTableColumns } from "drizzle-orm";
 export const createCareGiverPlan = async (req: Request, res: Response) => {
   const incomingData = req.cleanBody;
 
-  console.log("incomingData: ", incomingData);
-
   const newPlan = await db.insert(PlanModel).values(incomingData).returning();
   if (!newPlan || newPlan.length === 0) {
     throw new Error("Failed to create plan");

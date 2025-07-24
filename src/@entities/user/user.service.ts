@@ -174,7 +174,6 @@ export const updateProfileDetails = async (
     .set(updatedData)
     .where(eq(UserModel.id, userId))
     .returning();
-  console.log("Updated User:", updatedUser);
 
   if (updatedUser.length === 0) {
     throw new Error("Profile updation failed");

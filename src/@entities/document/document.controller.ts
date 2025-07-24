@@ -17,7 +17,6 @@ export const uploadGiversDocuments = async (req: Request, res: Response) => {
 
   // Generate image URL
   const result = `${cdnURL}/${uploadResult.Key}`;
-  console.log("Document uploaded to S3:", result);
 
   return res.status(200).json({
     success: true,

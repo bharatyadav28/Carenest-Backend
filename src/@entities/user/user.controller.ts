@@ -16,6 +16,9 @@ import {
   getAuthUser,
   updatePassword,
   fetchProfileDetails,
+  updateProfileDetails,
+  updateUserAvatar,
+  removeUserAvatar,
 } from "./user.service";
 
 export const signup = async (req: Request, res: Response) => {
@@ -80,7 +83,7 @@ export const resendOTPSignup = async (req: Request, res: Response) => {
   });
   if (!user) {
     throw new NotFoundError(
-      "No user exists with this id or email is already verified"
+      "No user with this id exists or email is already verified"
     );
   }
 
@@ -109,7 +112,8 @@ export const signin = async (req: Request, res: Response) => {
     where: and(
       eq(UserModel.email, email),
       eq(UserModel.isDeleted, false),
-      eq(UserModel.role, userRole)
+      eq(UserModel.role, userRole),
+      eq(UserModel.isEmailVerified, true)
     ),
     columns: {
       id: true,
@@ -331,7 +335,7 @@ export const changePassword = async (req: Request, res: Response) => {
 };
 
 export const getProfile = async (req: Request, res: Response) => {
-  const userId = req.user._id;
+  const userId = req.user.id;
   const user = await fetchProfileDetails(userId);
   return res.status(200).json({
     success: true,
@@ -339,5 +343,54 @@ export const getProfile = async (req: Request, res: Response) => {
     data: {
       user,
     },
+  });
+};
+
+export const updateProfile = async (req: Request, res: Response) => {
+  const updatedData = req.cleanBody;
+  const userId = req.user.id;
+
+  await updateProfileDetails(userId, updatedData);
+
+  return res.status(200).json({
+    success: true,
+    message: "Profile details updated successfully",
+  });
+};
+
+export const updateAvatar = async (req: Request, res: Response) => {
+  const userId = req.user.id;
+  const file = req.file;
+
+  if (!file) {
+    throw new BadRequestError("Please upload a file");
+  }
+  await updateUserAvatar(userId, file);
+
+  return res.status(200).json({
+    success: true,
+    message: "Profile image updated successfully",
+  });
+};
+
+export const removeAvatar = async (req: Request, res: Response) => {
+  const userId = req.user.id;
+
+  await removeUserAvatar(userId);
+
+  return res.status(200).json({
+    success: true,
+    message: "Profile image removed successfully",
+  });
+};
+
+export const deleteUsersAcccount = async (req: Request, res: Response) => {
+  const userId = req.user.id;
+
+  await deleteUser(userId);
+
+  return res.status(200).json({
+    success: true,
+    message: "Account deleted successfully",
   });
 };
