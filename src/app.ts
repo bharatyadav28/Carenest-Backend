@@ -52,7 +52,7 @@ import { trimStringFields } from "./middlewares/trim";
 app.use("/api", trimStringFields);
 
 app.use("/api/v1/user", userRouter);
-app.use("/api/v1/giver", isGiver, giverRouter);
+app.use("/api/v1/giver", giverRouter);
 app.use("/api/v1/job-profile", isGiver, jobProfileRouter);
 app.use("/api/v1/about", isGiver, aboutRouter);
 app.use("/api/v1/why-choose-me", isGiver, whyChooseMeRouter);
