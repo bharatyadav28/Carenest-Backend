@@ -1,0 +1,1 @@
+ALTER TABLE "booking_caregiver" ALTER COLUMN "is_final_selection" DROP DEFAULT;

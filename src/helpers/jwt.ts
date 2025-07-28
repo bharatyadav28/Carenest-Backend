@@ -2,10 +2,10 @@ import jwt from "jsonwebtoken";
 import { payloadType } from "../types/general-types";
 
 const minTime = 60 * 60 * 24;
-// const minTime =  10;
+// const minTime = 10;
 
 const maxTime = 60 * 60 * 24 * 7;
-// const maxTime = 1000 * 10;
+// const maxTime = 10;
 
 const tempTime = 60 * 5; //  5 min
 
@@ -51,8 +51,12 @@ export const verifyJWTToken = (token: string, tokenType?: string) => {
       : process.env.ACCESS_SECRET;
 
   if (secret) {
-    const payload = jwt.verify(token, secret);
-    return payload;
+    try {
+      const payload = jwt.verify(token, secret);
+      return payload;
+    } catch (error) {
+      return null;
+    }
   }
   return null;
 };

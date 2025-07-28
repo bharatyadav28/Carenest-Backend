@@ -128,7 +128,6 @@ export const searchCaregivers = async (req: Request, res: Response) => {
   }
 
   if (minPrice) {
-    console.log("minPrice", Number(minPrice));
     baseConditions.push(gte(JobProfileModel.minPrice, Number(minPrice)));
   }
 

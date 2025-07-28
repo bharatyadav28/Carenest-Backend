@@ -47,7 +47,9 @@ import { serviceRouter } from "./@entities/service";
 import { myServiceRouter } from "./@entities/myService";
 import { documentRouter } from "./@entities/document";
 import { planRouter } from "./@entities/plan";
+import { adminRouter } from "./@entities/admin";
 import { trimStringFields } from "./middlewares/trim";
+import BookingRouter from "./@entities/booking/booking.routes";
 
 app.use("/api", trimStringFields);
 
@@ -60,6 +62,8 @@ app.use("/api/v1/service", serviceRouter);
 app.use("/api/v1/my-service", isGiver, myServiceRouter);
 app.use("/api/v1/document", documentRouter);
 app.use("/api/v1/plan", planRouter);
+app.use("/api/v1/admin", adminRouter);
+app.use("/api/v1/booking", BookingRouter);
 
 app.get("/api/v1/new-access-token", getNewAccessToken);
 

@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { BadRequestError } from "../errors";
+import { BadRequestError, UnauthenticatedError } from "../errors";
 import { generateAccessToken, verifyJWTToken } from "../helpers/jwt";
 import { db } from "../db";
 import { and, eq } from "drizzle-orm";
@@ -39,8 +39,9 @@ export const isAdmin = async (
 export const getNewAccessToken = async (req: Request, res: Response) => {
   const authHeader = req.headers["authorization"];
   const refreshToken = authHeader && authHeader.split(" ")?.[1];
+
   if (!refreshToken) {
-    throw new BadRequestError("No refresh token found");
+    throw new UnauthenticatedError("No refresh token found");
   }
 
   const payload = verifyJWTToken(refreshToken, "refresh");
@@ -72,5 +73,7 @@ export const getNewAccessToken = async (req: Request, res: Response) => {
         accessToken,
       },
     });
+  } else {
+    throw new UnauthenticatedError("Your session is expired, please login");
   }
 };

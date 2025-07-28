@@ -50,7 +50,6 @@ export const updateAdminProfile = async (req: Request, res: Response) => {
   if (!updatedProfile || updatedProfile?.length == 0) {
     throw new Error("Profile updation failed");
   }
-  console.log("Update profile: ", updatedProfile);
 
   return res.status(200).json({
     success: true,

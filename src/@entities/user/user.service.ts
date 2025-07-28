@@ -4,7 +4,11 @@ import { db } from "../../db";
 import { UserModel } from "./user.model";
 import { UpdateUserType, RoleType } from "../../types/user-types";
 import { getTokenPayload } from "../../helpers/utils";
-import { BadRequestError, NotFoundError } from "../../errors";
+import {
+  BadRequestError,
+  NotFoundError,
+  UnauthenticatedError,
+} from "../../errors";
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -96,7 +100,7 @@ export const getAuthUser = async (
 
     return existingUser;
   } else {
-    throw new BadRequestError("Invalid token payload");
+    throw new UnauthenticatedError("Invalid access token");
   }
 };
 

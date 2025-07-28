@@ -1,5 +1,5 @@
 import userRouter from "./user.routes";
-import { UserModel } from "./user.model";
+import { UserModel, roleEnum } from "./user.model";
 export * from "./user.service";
 
-export { userRouter, UserModel };
+export { userRouter, UserModel, roleEnum };
