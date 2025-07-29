@@ -1,3 +1,5 @@
+process.env.AWS_SDK_JS_SUPPRESS_MAINTENANCE_MODE_MESSAGE = "1";
+
 import express, { Response } from "express";
 import "dotenv/config";
 import "express-async-errors";

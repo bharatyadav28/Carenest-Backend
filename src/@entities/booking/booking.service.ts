@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 
 import { db } from "../../db";
 import { BookingCaregiver, BookingModel } from "./booking.model";
@@ -29,11 +29,13 @@ export const cancelBooking = async ({
       cancelledBy: userId,
       cancelledByType: userRole,
     })
-    .where(eq(BookingModel.id, bookingId))
+    .where(
+      and(eq(BookingModel.id, bookingId), ne(BookingModel.status, "cancel"))
+    )
     .returning();
 
   if (!updatedBooking || updatedBooking.length === 0) {
-    throw new Error("Failed to cancel booking.");
+    throw new Error("Failed to cancel booking or booking already cancelled.");
   }
 
   await db

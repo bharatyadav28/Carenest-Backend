@@ -5,7 +5,10 @@ import {
   assignCaregiver,
   bookingRequest,
   completeBooking,
-  cancelUserBooking,
+  cancelBookingByGiver,
+  cancelBookingByUser,
+  getCaregiverBookings,
+  getUserRecentBookings,
 } from "./booking.controller";
 
 const BookingRouter = express.Router();
@@ -13,6 +16,11 @@ const BookingRouter = express.Router();
 BookingRouter.route("/").post(auth, bookingRequest);
 BookingRouter.route("/:id/assign").put(isAdmin, assignCaregiver);
 BookingRouter.route("/:id/complete").put(isAdmin, completeBooking);
-BookingRouter.route("/:id/cancel").put(isGiver, cancelUserBooking);
+
+BookingRouter.route("/:id/cancel/giver").put(isGiver, cancelBookingByGiver);
+BookingRouter.route("/:id/cancel/user").put(auth, cancelBookingByUser);
+
+BookingRouter.route("/recent/giver").get(isGiver, getCaregiverBookings);
+BookingRouter.route("/recent/user").get(auth, getUserRecentBookings);
 
 export default BookingRouter;

@@ -29,6 +29,10 @@ export const BookingModel = pgTable("booking", {
     .notNull()
     .$defaultFn(() => nanoid(21)),
 
+  userId: varchar("user_id", { length: 21 })
+    .notNull()
+    .references(() => UserModel.id),
+
   appointmentDate: date("appointment_date").notNull(),
 
   serviceId: varchar("service_id", { length: 21 })
