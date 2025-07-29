@@ -36,7 +36,7 @@ userRouter.route("/google-auth").post(googleAuth);
 
 userRouter.route("/forgot-password").post(forgotPassword);
 userRouter.route("/reset-password").put(resetPassword);
-userRouter.route("/change-password").put(isGiver, changePassword);
+userRouter.route("/change-password").put(auth, changePassword);
 
 userRouter
   .route("/my-profile")
