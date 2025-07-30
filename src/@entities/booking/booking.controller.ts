@@ -329,7 +329,7 @@ export const getCaregiverBookings = async (req: Request, res: Response) => {
   return res.status(200).json({
     success: true,
     message: "Caregiver bookings retrieved successfully.",
-    data: bookings,
+    data: { bookings },
   });
 };
 
@@ -405,6 +405,134 @@ export const getUserRecentBookings = async (req: Request, res: Response) => {
   return res.status(200).json({
     success: true,
     message: "Recent bookings retrieved successfully.",
-    data: bookings,
+    data: { bookings },
+  });
+};
+
+export const getBookingsForAdmin = async (req: Request, res: Response) => {
+  const { bookedOn, appointmentDate, status, search } = req.query;
+
+  const baseConditions = [];
+
+  if (bookedOn) {
+    baseConditions.push(
+      sql`DATE(${BookingModel.createdAt}) = DATE(${new Date(
+        bookedOn as string
+      )})`
+    );
+  }
+  if (appointmentDate) {
+    baseConditions.push(
+      sql`DATE(${BookingModel.appointmentDate}) = DATE(${new Date(
+        appointmentDate as string
+      )})`
+    );
+  }
+  if (status) {
+    baseConditions.push(sql`${BookingModel.status} = ${status}`);
+  }
+  if (search) {
+    baseConditions.push(
+      sql`(${UserModel.name} ILIKE ${`%${search}%`}) OR (${
+        UserModel.email
+      } ILIKE ${`%${search}%`})`
+    );
+  }
+
+  const bookings = await db
+    .select({
+      bookingId: BookingModel.id,
+      bookedOn: BookingModel.createdAt,
+      appointmentDate: BookingModel.appointmentDate,
+      duration: BookingModel.durationInDays,
+      status: BookingModel.status,
+      user: {
+        id: UserModel.id,
+        name: UserModel.name,
+        email: UserModel.email,
+        isDeleted: UserModel.isDeleted,
+      },
+      service: ServiceModel.name,
+    })
+    .from(BookingModel)
+    .where(and(...baseConditions))
+    .innerJoin(UserModel as any, eq(BookingModel.userId, UserModel.id))
+    .innerJoin(
+      ServiceModel as any,
+      eq(BookingModel.serviceId, ServiceModel.id)
+    );
+
+  return res.status(200).json({
+    success: true,
+    message: "Bookings retrieved successfully.",
+    data: { bookings },
+  });
+};
+
+export const getBookingDetails = async (req: Request, res: Response) => {
+  const { id: bookingId } = req.params;
+
+  const bookingDataPromise = db
+    .select({
+      bookingId: BookingModel.id,
+      bookedOn: BookingModel.createdAt,
+      appointmentDate: BookingModel.appointmentDate,
+      duration: BookingModel.durationInDays,
+      status: BookingModel.status,
+      user: {
+        id: UserModel.id,
+        name: UserModel.name,
+        email: UserModel.email,
+        mobile: UserModel.mobile,
+        avatar: UserModel.avatar,
+        isDeleted: UserModel.isDeleted,
+      },
+      service: ServiceModel.name,
+      completedAt: BookingModel.completedAt,
+    })
+    .from(BookingModel)
+    .where(eq(BookingModel.id, bookingId))
+    .innerJoin(UserModel as any, eq(BookingModel.userId, UserModel.id))
+    .innerJoin(
+      ServiceModel as any,
+      eq(BookingModel.serviceId, ServiceModel.id)
+    );
+
+  const caregiversPromise = db
+    .select({
+      id: BookingCaregiver.caregiverId,
+      name: UserModel.name,
+      avatar: UserModel.avatar,
+      isUsersChoice: BookingCaregiver.isUsersChoice,
+      isFinalSelection: BookingCaregiver.isFinalSelection,
+      minExperience: JobProfileModel.experienceMin,
+      maxExperience: JobProfileModel.experienceMax,
+      minPrice: JobProfileModel.minPrice,
+      maxPrice: JobProfileModel.maxPrice,
+      isDeleted: UserModel.isDeleted,
+    })
+    .from(BookingCaregiver)
+    .where(eq(BookingCaregiver.bookingId, bookingId))
+    .innerJoin(UserModel as any, eq(BookingCaregiver.caregiverId, UserModel.id))
+    .leftJoin(JobProfileModel as any, eq(UserModel.id, JobProfileModel.userId));
+
+  const [bookingData, caregivers] = await Promise.all([
+    bookingDataPromise,
+    caregiversPromise,
+  ]);
+
+  if (!bookingData || bookingData.length === 0) {
+    throw new BadRequestError("Booking not found.");
+  }
+
+  const booking = {
+    ...bookingData[0],
+    caregivers: caregivers,
+  };
+
+  return res.status(200).json({
+    success: true,
+    message: "Booking details retrieved successfully.",
+    data: { booking },
   });
 };

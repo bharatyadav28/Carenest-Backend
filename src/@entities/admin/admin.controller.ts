@@ -30,15 +30,15 @@ export const getAdminProfile = async (req: Request, res: Response) => {
 };
 
 export const updateAdminProfile = async (req: Request, res: Response) => {
-  const { name, email, newPassword } = req.body;
+  const { name, email, password } = req.body;
 
   let newData: { name: string; email: string; password?: string } = {
     name,
     email,
   };
 
-  if (newPassword) {
-    const hashedPassword = await hashPassword(newPassword);
+  if (password) {
+    const hashedPassword = await hashPassword(password);
     newData.password = hashedPassword;
   }
 
