@@ -410,7 +410,11 @@ export const getUserRecentBookings = async (req: Request, res: Response) => {
 };
 
 export const getBookingsForAdmin = async (req: Request, res: Response) => {
-  const { bookedOn, appointmentDate, status, search } = req.query;
+  const { bookedOn, appointmentDate, status, search, page } = req.query;
+
+  const pageSize = 10; // Define the number of bookings per page
+  const pageNumber = page ? parseInt(page as string, 10) : 1;
+  const skip = (pageNumber - 1) * pageSize;
 
   const baseConditions = [];
 
@@ -439,7 +443,7 @@ export const getBookingsForAdmin = async (req: Request, res: Response) => {
     );
   }
 
-  const bookings = await db
+  const bookingsPromise = await db
     .select({
       bookingId: BookingModel.id,
       bookedOn: BookingModel.createdAt,
@@ -457,15 +461,33 @@ export const getBookingsForAdmin = async (req: Request, res: Response) => {
     .from(BookingModel)
     .where(and(...baseConditions))
     .innerJoin(UserModel as any, eq(BookingModel.userId, UserModel.id))
+    .innerJoin(ServiceModel as any, eq(BookingModel.serviceId, ServiceModel.id))
+    .limit(pageSize)
+    .offset(skip);
+
+  const totalBookingsPromise = await db
+    .select({
+      count: sql<number>`COUNT(*)`,
+    })
+    .from(BookingModel)
+    .where(and(...baseConditions))
+    .innerJoin(UserModel as any, eq(BookingModel.userId, UserModel.id))
     .innerJoin(
       ServiceModel as any,
       eq(BookingModel.serviceId, ServiceModel.id)
     );
 
+  const [bookings, totalBookings] = await Promise.all([
+    bookingsPromise,
+    totalBookingsPromise,
+  ]);
+
+  const pagesCount = Math.ceil((totalBookings?.[0]?.count || 0) / pageSize);
+
   return res.status(200).json({
     success: true,
     message: "Bookings retrieved successfully.",
-    data: { bookings },
+    data: { bookings, pagesCount },
   });
 };
 
