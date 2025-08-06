@@ -75,7 +75,7 @@ export const getAuthUser = async (
   const userRole = role ? role : "user";
   const accessToken = authHeader && authHeader.split(" ")?.[1];
   if (!accessToken) {
-    throw new BadRequestError("Access token missing");
+    throw new UnauthenticatedError("Access token missing");
   }
 
   const payload = verifyJWTToken(accessToken, tokenType);

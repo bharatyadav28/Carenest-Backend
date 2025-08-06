@@ -85,6 +85,13 @@
       "when": 1753699482284,
       "tag": "0011_pretty_thunderball",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1754029299754,
+      "tag": "0012_opposite_the_anarchist",
+      "breakpoints": true
     }
   ]
 }

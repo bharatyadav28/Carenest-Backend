@@ -19,7 +19,7 @@ import { UserModel, roleEnum } from "../user/user.model";
 export const bookingStatusEnum = pgEnum("booking_status", [
   "pending",
   "active",
-  "completed",
+  "complete",
   "cancel",
 ]);
 

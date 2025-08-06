@@ -90,7 +90,12 @@ export const assignCaregiver = async (req: Request, res: Response) => {
     // Update booking status to active
     const booking = await tx
       .update(BookingModel)
-      .set({ status: "active" })
+      .set({
+        status: "active",
+        cancelledAt: null,
+        cancellationReason: null,
+        updatedAt: new Date(),
+      })
       .where(eq(BookingModel.id, bookingId))
       .returning();
 
@@ -125,7 +130,12 @@ export const assignCaregiver = async (req: Request, res: Response) => {
       const [selectedCaregiverResult] = await Promise.all([
         tx
           .update(BookingCaregiver)
-          .set({ isFinalSelection: true, updatedAt: new Date() })
+          .set({
+            isFinalSelection: true,
+            updatedAt: new Date(),
+            cancelledAt: null,
+            cancellationReason: null,
+          })
           .where(
             and(
               eq(BookingCaregiver.caregiverId, caregiverId),
@@ -175,7 +185,7 @@ export const completeBooking = async (req: Request, res: Response) => {
   const updatedBooking = await db
     .update(BookingModel)
     .set({
-      status: "completed",
+      status: "complete",
       completedAt: new Date(),
       updatedAt: new Date(),
     })
@@ -228,7 +238,6 @@ export const cancelBookingByUser = async (req: Request, res: Response) => {
   const { id: bookingId } = req.params;
   const { cancellationReason } = req.body;
 
-  console.log("req.user.id", req.user.id);
   const isUsersBooking = await db.query.BookingModel.findFirst({
     where: and(
       eq(BookingModel.id, bookingId),
@@ -242,6 +251,23 @@ export const cancelBookingByUser = async (req: Request, res: Response) => {
   if (!isUsersBooking) {
     throw new BadRequestError("You are not authorized to cancel this booking.");
   }
+
+  await cancelBooking({
+    bookingId,
+    cancellationReason,
+    userId: req.user.id,
+    userRole: req.user.role,
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: "Booking cancelled successfully.",
+  });
+};
+
+export const cancelBookingByAdmin = async (req: Request, res: Response) => {
+  const { id: bookingId } = req.params;
+  const { cancellationReason } = req.body;
 
   await cancelBooking({
     bookingId,
@@ -342,7 +368,7 @@ export const getUserRecentBookings = async (req: Request, res: Response) => {
     status = status.toString().toLowerCase();
     if (status === "accepted") {
       baseConditions.push(eq(BookingModel.status, "active"));
-    } else if (status === "pending" || status === "completed") {
+    } else if (status === "pending" || status === "complete") {
       baseConditions.push(eq(BookingModel.status, status));
     }
   }
@@ -359,6 +385,7 @@ export const getUserRecentBookings = async (req: Request, res: Response) => {
           ELSE ${BookingModel.status}::text
         END
       `.as("status"),
+      service: ServiceModel.name,
 
       caregivers: sql`array_agg(json_build_object(
         'id', CASE 
@@ -393,13 +420,15 @@ export const getUserRecentBookings = async (req: Request, res: Response) => {
       eq(BookingModel.id, BookingCaregiver.bookingId)
     )
     .innerJoin(UserModel as any, eq(BookingCaregiver.caregiverId, UserModel.id))
+    .innerJoin(ServiceModel as any, eq(BookingModel.serviceId, ServiceModel.id))
     .leftJoin(JobProfileModel as any, eq(UserModel.id, JobProfileModel.userId))
     .groupBy(
       BookingModel.id,
       BookingModel.createdAt,
       BookingModel.appointmentDate,
       BookingModel.durationInDays,
-      BookingModel.status
+      BookingModel.status,
+      ServiceModel.name
     );
 
   return res.status(200).json({
@@ -511,6 +540,7 @@ export const getBookingDetails = async (req: Request, res: Response) => {
       },
       service: ServiceModel.name,
       completedAt: BookingModel.completedAt,
+      cancelledAt: BookingModel.cancelledAt,
     })
     .from(BookingModel)
     .where(eq(BookingModel.id, bookingId))
@@ -525,6 +555,7 @@ export const getBookingDetails = async (req: Request, res: Response) => {
       id: BookingCaregiver.caregiverId,
       name: UserModel.name,
       avatar: UserModel.avatar,
+      email: UserModel.email,
       isUsersChoice: BookingCaregiver.isUsersChoice,
       isFinalSelection: BookingCaregiver.isFinalSelection,
       minExperience: JobProfileModel.experienceMin,
@@ -556,5 +587,33 @@ export const getBookingDetails = async (req: Request, res: Response) => {
     success: true,
     message: "Booking details retrieved successfully.",
     data: { booking },
+  });
+};
+
+export const updateBookingDetails = async (req: Request, res: Response) => {
+  const { id: bookingId } = req.params;
+  const { appointmentDate, duration: durationInDays } = req.body;
+
+  if (!appointmentDate || !durationInDays) {
+    throw new BadRequestError("Please provide appointment date and duration.");
+  }
+  const updatedBooking = await db
+    .update(BookingModel)
+    .set({
+      appointmentDate,
+      durationInDays,
+      updatedAt: new Date(),
+    })
+    .where(eq(BookingModel.id, bookingId))
+    .returning();
+
+  if (!updatedBooking || updatedBooking.length === 0) {
+    throw new BadRequestError("Failed to update booking details.");
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "Booking updated successfully.",
+    data: { booking: updatedBooking },
   });
 };
