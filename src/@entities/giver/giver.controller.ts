@@ -240,3 +240,45 @@ export const caregiverDetails = async (req: Request, res: Response) => {
     data: { details },
   });
 };
+
+export const getCaregivers = async (req: Request, res: Response) => {
+  const { search } = req.query;
+
+  const baseConditions = [
+    eq(UserModel.role, "giver"),
+    eq(UserModel.isDeleted, false),
+  ];
+  if (search && typeof search === "string") {
+    baseConditions.push(
+      sql`(${UserModel.name} ILIKE ${`%${search}%`} OR ${
+        UserModel.email
+      } ILIKE ${`%${search}%`})`
+    );
+  }
+
+  const caregivers = await db
+    .select({
+      id: UserModel.id,
+      name: UserModel.name,
+      avatar: UserModel.avatar,
+      email: UserModel.email,
+      mobile: UserModel.mobile,
+      address: UserModel.address,
+      minExperience: JobProfileModel.experienceMin,
+      maxExperience: JobProfileModel.experienceMax,
+      minPrice: JobProfileModel.minPrice,
+      maxPrice: JobProfileModel.maxPrice,
+    })
+    .from(UserModel)
+    .where(and(...baseConditions))
+    .innerJoin(
+      JobProfileModel as any,
+      eq(UserModel.id, JobProfileModel.userId)
+    );
+
+  return res.status(200).json({
+    success: true,
+    message: "Caregivers fetched successfully",
+    data: { caregivers },
+  });
+};

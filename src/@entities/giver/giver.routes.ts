@@ -4,6 +4,7 @@ import {
   caregiverDetails,
   changePassword,
   deleteGiversAcccount,
+  getCaregivers,
   getProfile,
   removeAvatar,
   searchCaregivers,
@@ -13,9 +14,11 @@ import {
 import { validateData } from "../../middlewares/validation";
 import { updateUserSchema } from "../user/user.model";
 import { upload } from "../../helpers/s3";
-import { isGiver } from "../../middlewares/auth";
+import { isAdmin, isGiver } from "../../middlewares/auth";
 
 const giverRouter = express.Router();
+
+giverRouter.route("/").get(isAdmin, getCaregivers);
 
 giverRouter.route("/change-password").put(isGiver, changePassword);
 
