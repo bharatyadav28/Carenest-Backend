@@ -9,18 +9,16 @@ import {
   date,
 } from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
-import {} from "drizzle-orm/pg-core";
-import {} from "drizzle-orm/pg-core";
 
 import { min_timestamps } from "../../helpers/columns";
 import { ServiceModel } from "../service";
 import { UserModel, roleEnum } from "../user/user.model";
 
 export const bookingStatusEnum = pgEnum("booking_status", [
-  "pending",
+  "requested",
   "active",
-  "complete",
-  "cancel",
+  "completed",
+  "cancelled",
 ]);
 
 export const BookingModel = pgTable("booking", {
@@ -41,7 +39,7 @@ export const BookingModel = pgTable("booking", {
 
   durationInDays: integer("duration_in_days").notNull(),
 
-  status: bookingStatusEnum("status").default("pending"),
+  status: bookingStatusEnum("status").default("requested"),
 
   completedAt: timestamp("completed_at"),
 
@@ -57,6 +55,14 @@ export const BookingModel = pgTable("booking", {
 
   ...min_timestamps,
 });
+
+export const bookingCaregiverStatusEnum = pgEnum("booking_giver_status", [
+  "interested",
+  "rejected",
+  "active",
+  "completed",
+  "cancelled",
+]);
 
 export const BookingCaregiver = pgTable("booking_caregiver", {
   id: varchar("id", { length: 21 })
@@ -74,7 +80,8 @@ export const BookingCaregiver = pgTable("booking_caregiver", {
 
   isUsersChoice: boolean("is_users_choice").default(true),
 
-  isFinalSelection: boolean("is_final_selection"),
+  // isFinalSelection: boolean("is_final_selection"),
+  status: bookingCaregiverStatusEnum("status").default("interested"),
 
   cancelledAt: timestamp("cancelled_at"),
 

@@ -1,1 +1,0 @@
-ALTER TABLE "about" ALTER COLUMN "content" SET DATA TYPE varchar(1000);

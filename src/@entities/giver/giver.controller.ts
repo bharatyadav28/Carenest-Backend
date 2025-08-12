@@ -270,11 +270,8 @@ export const getCaregivers = async (req: Request, res: Response) => {
       maxPrice: JobProfileModel.maxPrice,
     })
     .from(UserModel)
-    .where(and(...baseConditions))
-    .innerJoin(
-      JobProfileModel as any,
-      eq(UserModel.id, JobProfileModel.userId)
-    );
+    .leftJoin(JobProfileModel as any, eq(UserModel.id, JobProfileModel.userId))
+    .where(and(...baseConditions));
 
   return res.status(200).json({
     success: true,

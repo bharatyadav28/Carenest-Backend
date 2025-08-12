@@ -22,7 +22,7 @@ export const cancelBooking = async ({
   const updatedBooking = await db
     .update(BookingModel)
     .set({
-      status: "cancel",
+      status: "cancelled",
       cancelledAt: now,
       cancellationReason,
       updatedAt: now,
@@ -30,7 +30,7 @@ export const cancelBooking = async ({
       cancelledByType: userRole,
     })
     .where(
-      and(eq(BookingModel.id, bookingId), ne(BookingModel.status, "cancel"))
+      and(eq(BookingModel.id, bookingId), ne(BookingModel.status, "cancelled"))
     )
     .returning();
 
@@ -41,13 +41,13 @@ export const cancelBooking = async ({
   await db
     .update(BookingCaregiver)
     .set({
-      cancelledAt: now,
+      status: "cancelled",
       updatedAt: now,
     })
     .where(
       and(
         eq(BookingCaregiver.bookingId, bookingId),
-        eq(BookingCaregiver.isFinalSelection, true)
+        eq(BookingCaregiver.status, "active")
       )
     )
     .returning();

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
-import { BadRequestError } from "../../errors";
+
+import { BadRequestError, NotFoundError } from "../../errors";
 import { db } from "../../db";
 import { BookingCaregiver, BookingModel } from "./booking.model";
 import { and, eq, isNotNull, ne, sql, isNull } from "drizzle-orm";
@@ -7,6 +8,10 @@ import { cancelBooking } from "./booking.service";
 import { ServiceModel } from "../service";
 import { UserModel } from "../user";
 import { JobProfileModel } from "../jobProfile";
+import {
+  bookingStatusType,
+  giverBookingStatusType,
+} from "../../types/general-types";
 
 export const bookingRequest = async (req: Request, res: Response) => {
   const { appointmentDate, serviceId, durationInDays, selectedCaregivers } =
@@ -20,7 +25,7 @@ export const bookingRequest = async (req: Request, res: Response) => {
     );
   }
 
-  if (!selectedCaregivers || selectedCaregivers.length < 2) {
+  if (!selectedCaregivers || selectedCaregivers.length < 3) {
     throw new BadRequestError(
       "Please select at least 3 caregivers  for the booking."
     );
@@ -94,6 +99,8 @@ export const assignCaregiver = async (req: Request, res: Response) => {
         status: "active",
         cancelledAt: null,
         cancellationReason: null,
+        cancelledBy: null,
+        cancelledByType: null,
         updatedAt: new Date(),
       })
       .where(eq(BookingModel.id, bookingId))
@@ -113,10 +120,10 @@ export const assignCaregiver = async (req: Request, res: Response) => {
 
     let assignedCaregiver = null;
 
-    // First, set all other caregivers' isFinalSelection to false (common operation)
+    // First, set all other caregivers' status to rejected
     const setOtherCaregiversToFalse = tx
       .update(BookingCaregiver)
-      .set({ isFinalSelection: false, updatedAt: new Date() })
+      .set({ status: "rejected", updatedAt: new Date() })
       .where(
         and(
           eq(BookingCaregiver.bookingId, bookingId),
@@ -126,12 +133,12 @@ export const assignCaregiver = async (req: Request, res: Response) => {
 
     // Run the main operation and the common operation in parallel
     if (userSelectedCaregiver) {
-      // Update existing caregiver selection as final
+      // Update existing caregiver status to "active"
       const [selectedCaregiverResult] = await Promise.all([
         tx
           .update(BookingCaregiver)
           .set({
-            isFinalSelection: true,
+            status: "active",
             updatedAt: new Date(),
             cancelledAt: null,
             cancellationReason: null,
@@ -154,7 +161,7 @@ export const assignCaregiver = async (req: Request, res: Response) => {
           .values({
             caregiverId,
             bookingId,
-            isFinalSelection: true,
+            status: "active",
             isUsersChoice: false,
           })
           .returning(),
@@ -182,17 +189,66 @@ export const assignCaregiver = async (req: Request, res: Response) => {
 export const completeBooking = async (req: Request, res: Response) => {
   const { id: bookingId } = req.params;
 
+  const existingBookingPromise = await db.query.BookingModel.findFirst({
+    where: eq(BookingModel.id, bookingId),
+    columns: {
+      status: true,
+    },
+  });
+
+  const assignedCaregiverPromise = db.query.BookingCaregiver.findFirst({
+    where: and(
+      eq(BookingCaregiver.bookingId, bookingId),
+      eq(BookingCaregiver.status, "active")
+    ),
+    columns: {
+      caregiverId: true,
+      status: true,
+      id: true,
+    },
+  });
+
+  const [existingBooking, assignedCaregiver] = await Promise.all([
+    existingBookingPromise,
+    assignedCaregiverPromise,
+  ]);
+
+  if (!existingBooking) {
+    throw new NotFoundError("Booking not found.");
+  }
+
+  if (existingBooking.status === "completed") {
+    throw new BadRequestError("Booking is already complete.");
+  }
+  if (!assignedCaregiver) {
+    throw new BadRequestError("No active caregiver assigned to this booking.");
+  }
+
   const updatedBooking = await db
     .update(BookingModel)
     .set({
-      status: "complete",
+      status: "completed",
       completedAt: new Date(),
       updatedAt: new Date(),
     })
     .where(eq(BookingModel.id, bookingId))
     .returning();
 
-  if (!updatedBooking || updatedBooking.length === 0) {
+  const updatedCaregiver = await db
+    .update(BookingCaregiver)
+    .set({
+      status: "completed",
+      updatedAt: new Date(),
+    })
+    .where(eq(BookingCaregiver.id, assignedCaregiver.id))
+    .returning();
+
+  if (
+    !updatedBooking ||
+    updatedBooking.length === 0 ||
+    !updatedCaregiver ||
+    updatedCaregiver.length === 0
+  ) {
     throw new Error("Failed to complete booking.");
   }
 
@@ -202,6 +258,7 @@ export const completeBooking = async (req: Request, res: Response) => {
   });
 };
 
+// Todo: Booking request
 export const cancelBookingByGiver = async (req: Request, res: Response) => {
   const { id: bookingId } = req.params;
   const { cancellationReason } = req.body;
@@ -209,8 +266,8 @@ export const cancelBookingByGiver = async (req: Request, res: Response) => {
   const isGiversBooking = await db.query.BookingCaregiver.findFirst({
     where: and(
       eq(BookingCaregiver.bookingId, bookingId),
-      eq(BookingCaregiver.caregiverId, req.user.id),
-      eq(BookingCaregiver.isFinalSelection, true)
+      eq(BookingCaregiver.caregiverId, req.user.id)
+      // eq(BookingCaregiver.isFinalSelection, true)
     ),
     columns: {
       id: true,
@@ -241,7 +298,8 @@ export const cancelBookingByUser = async (req: Request, res: Response) => {
   const isUsersBooking = await db.query.BookingModel.findFirst({
     where: and(
       eq(BookingModel.id, bookingId),
-      eq(BookingModel.userId, req.user.id)
+      eq(BookingModel.userId, req.user.id),
+      ne(BookingModel.status, "cancelled")
     ),
     columns: {
       id: true,
@@ -249,7 +307,9 @@ export const cancelBookingByUser = async (req: Request, res: Response) => {
   });
 
   if (!isUsersBooking) {
-    throw new BadRequestError("You are not authorized to cancel this booking.");
+    throw new BadRequestError(
+      "You are not authorized to cancel this booking or booking already cancelled."
+    );
   }
 
   await cancelBooking({
@@ -268,6 +328,20 @@ export const cancelBookingByUser = async (req: Request, res: Response) => {
 export const cancelBookingByAdmin = async (req: Request, res: Response) => {
   const { id: bookingId } = req.params;
   const { cancellationReason } = req.body;
+
+  const booking = await db.query.BookingModel.findFirst({
+    where: and(
+      eq(BookingModel.id, bookingId),
+      ne(BookingModel.status, "cancelled")
+    ),
+    columns: {
+      id: true,
+    },
+  });
+
+  if (!booking) {
+    throw new BadRequestError("Booking not found or already cancelled.");
+  }
 
   await cancelBooking({
     bookingId,
@@ -290,26 +364,15 @@ export const getCaregiverBookings = async (req: Request, res: Response) => {
 
   if (status) {
     status = status.toString().toLowerCase();
-    if (status === "rejected") {
-      baseConditions.push(isNotNull(BookingCaregiver.cancelledAt));
-    } else if (status === "hired") {
-      baseConditions.push(eq(BookingCaregiver.isFinalSelection, true));
-      baseConditions.push(isNull(BookingCaregiver.cancelledAt));
-    } else if (status === "active") {
-      baseConditions.push(eq(BookingCaregiver.isFinalSelection, false));
-    }
+    baseConditions.push(
+      eq(BookingCaregiver.status, status as giverBookingStatusType)
+    );
   }
 
   const bookings = await db
     .select({
       bookingId: BookingCaregiver.bookingId,
-      status: sql<string>`
-        CASE 
-          WHEN ${BookingCaregiver.cancelledAt} IS NOT NULL THEN 'rejected'
-          WHEN ${BookingCaregiver.isFinalSelection} = true THEN 'hired'
-          ELSE 'active'
-        END
-      `.as("status"),
+      status: BookingCaregiver.status,
       bookedOn: BookingModel.createdAt,
       appointmentDate: BookingModel.appointmentDate,
       duration: BookingModel.durationInDays,
@@ -365,12 +428,7 @@ export const getUserRecentBookings = async (req: Request, res: Response) => {
 
   const baseConditions = [eq(BookingModel.userId, userId)];
   if (status) {
-    status = status.toString().toLowerCase();
-    if (status === "accepted") {
-      baseConditions.push(eq(BookingModel.status, "active"));
-    } else if (status === "pending" || status === "complete") {
-      baseConditions.push(eq(BookingModel.status, status));
-    }
+    baseConditions.push(eq(BookingModel.status, status as bookingStatusType));
   }
 
   const bookings = await db
@@ -379,13 +437,7 @@ export const getUserRecentBookings = async (req: Request, res: Response) => {
       bookedOn: BookingModel.createdAt,
       appointmentDate: BookingModel.appointmentDate,
       duration: BookingModel.durationInDays,
-      status: sql<string>`
-        CASE
-          WHEN ${BookingModel.status} = 'active' THEN 'accepted'
-          ELSE ${BookingModel.status}::text
-        END
-      `.as("status"),
-      service: ServiceModel.name,
+      status: BookingModel.status,
 
       caregivers: sql`array_agg(json_build_object(
         'id', CASE 
@@ -400,7 +452,7 @@ export const getUserRecentBookings = async (req: Request, res: Response) => {
           WHEN ${UserModel.isDeleted} = true THEN NULL
           ELSE ${UserModel.avatar}
         END,
-        'isFinalSelection', ${BookingCaregiver.isFinalSelection},
+        'status', ${BookingCaregiver.status},
         'experience', CASE 
           WHEN ${UserModel.isDeleted} = true THEN NULL
           ELSE ${JobProfileModel.experienceMax}
@@ -557,7 +609,7 @@ export const getBookingDetails = async (req: Request, res: Response) => {
       avatar: UserModel.avatar,
       email: UserModel.email,
       isUsersChoice: BookingCaregiver.isUsersChoice,
-      isFinalSelection: BookingCaregiver.isFinalSelection,
+      status: BookingCaregiver.status,
       minExperience: JobProfileModel.experienceMin,
       maxExperience: JobProfileModel.experienceMax,
       minPrice: JobProfileModel.minPrice,
