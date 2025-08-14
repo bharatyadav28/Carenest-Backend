@@ -404,9 +404,9 @@ export const getCaregiverBookings = async (req: Request, res: Response) => {
             END
         `.as("mobile"),
         isDeleted: UserModel.isDeleted,
+        avatar: UserModel.avatar,
+        address: UserModel.address,
       },
-      avatar: UserModel.avatar,
-      address: UserModel.address,
     })
     .from(BookingCaregiver)
     .where(and(...baseConditions))
