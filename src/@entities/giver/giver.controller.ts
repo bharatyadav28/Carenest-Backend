@@ -194,9 +194,12 @@ export const searchCaregivers = async (req: Request, res: Response) => {
   });
 };
 
+// ...existing code...
 export const caregiverDetails = async (req: Request, res: Response) => {
   const caregiverId = req.params.id;
-  const details = await db
+
+  // Get user basic details with job profile and about
+  const userDetailsPromise = db
     .select({
       id: UserModel.id,
       avatar: UserModel.avatar,
@@ -204,35 +207,52 @@ export const caregiverDetails = async (req: Request, res: Response) => {
       email: UserModel.email,
       mobile: UserModel.mobile,
       address: UserModel.address,
-      experience: JobProfileModel.experienceMax,
-      price: JobProfileModel.minPrice,
-      about: AboutModel.content,
-      services: sql<string[]>`array_agg(${ServiceModel.name})`.as("services"),
-      whyChooseMe: sql`array_agg(json_build_object('title',${whyChooseMeModel.title}, 'description', ${whyChooseMeModel.description}))`,
+      experience: sql<number>`COALESCE(${JobProfileModel.experienceMax}, 0)`,
+      price: sql<number>`COALESCE(${JobProfileModel.minPrice}, 0)`,
+      about: sql<string>`COALESCE(${AboutModel.content}, '')`,
     })
     .from(UserModel)
-    .innerJoin(JobProfileModel as any, eq(UserModel.id, JobProfileModel.userId))
-    .innerJoin(AboutModel as any, eq(UserModel.id, AboutModel.userId))
-    .innerJoin(MyServiceModel as any, eq(UserModel.id, MyServiceModel.userId))
-    .innerJoin(
-      whyChooseMeModel as any,
-      eq(UserModel.id, whyChooseMeModel.userId)
-    )
+    .leftJoin(JobProfileModel as any, eq(UserModel.id, JobProfileModel.userId))
+    .leftJoin(AboutModel as any, eq(UserModel.id, AboutModel.userId))
+    .where(eq(UserModel.id, caregiverId))
+    .limit(1);
+
+  // Get services separately
+  const servicesPromise = db
+    .select({
+      name: ServiceModel.name,
+    })
+    .from(MyServiceModel)
     .innerJoin(
       ServiceModel as any,
       eq(MyServiceModel.serviceId, ServiceModel.id)
     )
-    .where(eq(UserModel.id, caregiverId))
-    .groupBy(
-      UserModel.id,
-      UserModel.name,
-      UserModel.email,
-      UserModel.mobile,
-      UserModel.address,
-      JobProfileModel.experienceMax,
-      JobProfileModel.minPrice,
-      AboutModel.content
-    );
+    .where(eq(MyServiceModel.userId, caregiverId));
+
+  // Get whyChooseMe separately
+  const whyChooseMePromise = db
+    .select({
+      title: whyChooseMeModel.title,
+      description: whyChooseMeModel.description,
+    })
+    .from(whyChooseMeModel)
+    .where(eq(whyChooseMeModel.userId, caregiverId));
+
+  const [userDetails, services, whyChooseMe] = await Promise.all([
+    userDetailsPromise,
+    servicesPromise,
+    whyChooseMePromise,
+  ]);
+
+  if (!userDetails.length) {
+    throw new BadRequestError("Caregiver not found");
+  }
+
+  const details = {
+    ...userDetails[0],
+    services: services.map((s) => s.name),
+    whyChooseMe: whyChooseMe,
+  };
 
   return res.status(200).json({
     success: true,
@@ -240,6 +260,7 @@ export const caregiverDetails = async (req: Request, res: Response) => {
     data: { details },
   });
 };
+// ...existing code...
 
 export const getCaregivers = async (req: Request, res: Response) => {
   const { search } = req.query;
