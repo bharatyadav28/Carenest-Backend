@@ -385,7 +385,6 @@ export const completeBooking = async (req: Request, res: Response) => {
   });
 };
 
-// Todo: Booking request
 export const cancelBookingByGiver = async (req: Request, res: Response) => {
   const { id: bookingId } = req.params;
   const { cancellationReason } = req.body;
@@ -567,6 +566,7 @@ export const getUserRecentBookings = async (req: Request, res: Response) => {
       appointmentDate: BookingModel.appointmentDate,
       duration: BookingModel.durationInDays,
       status: BookingModel.status,
+      serviceName: ServiceModel.name,
 
       caregivers: sql`array_agg(json_build_object(
         'id', CASE 
