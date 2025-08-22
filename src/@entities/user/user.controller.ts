@@ -20,6 +20,8 @@ import {
   updateUserAvatar,
   removeUserAvatar,
 } from "./user.service";
+import sendEmail from "../../helpers/sendEmail";
+import { getSignupHTML } from "../../helpers/emailText";
 
 export const signup = async (req: Request, res: Response) => {
   const incomingData = req.cleanBody;
@@ -157,7 +159,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
 
   const user = await db.query.UserModel.findFirst({
     where: eq(UserModel.id, userId),
-    columns: { id: true },
+    columns: { id: true, role: true, email: true, name: true },
   });
   if (!user) {
     throw new NotFoundError("No data with this user id exists.");
@@ -173,6 +175,14 @@ export const verifyEmail = async (req: Request, res: Response) => {
       .returning();
     if (!verified) {
       throw new Error("Email verification failed");
+    }
+
+    if (user.role === "giver") {
+      await sendEmail({
+        to: user.email,
+        subject: " Welcome to CareWorks – Let’s Get Started!",
+        html: getSignupHTML(user?.name || "user"),
+      });
     }
   }
 

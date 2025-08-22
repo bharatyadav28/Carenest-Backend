@@ -52,6 +52,8 @@ import { planRouter } from "./@entities/plan";
 import { adminRouter } from "./@entities/admin";
 import { trimStringFields } from "./middlewares/trim";
 import BookingRouter from "./@entities/booking/booking.routes";
+import sendEmail from "./helpers/sendEmail";
+import { getDocumentUploadReminderHTML } from "./helpers/emailText";
 
 app.use("/api", trimStringFields);
 
@@ -66,6 +68,27 @@ app.use("/api/v1/document", documentRouter);
 app.use("/api/v1/plan", planRouter);
 app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/booking", BookingRouter);
+
+app.get("/api/v1/email-test", async (_, res: Response) => {
+  try {
+    await sendEmail({
+      to: "test@gmail.com",
+      subject: "Welcome to CareNest!",
+      html: getDocumentUploadReminderHTML(),
+    });
+    return res.status(200).json({
+      success: true,
+      message: "Email sent successfully!",
+    });
+  } catch (error) {
+    console.error("Email sending failed:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to send email",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
 
 app.get("/api/v1/new-access-token", getNewAccessToken);
 

@@ -12,6 +12,14 @@ import {
   bookingStatusType,
   giverBookingStatusType,
 } from "../../types/general-types";
+import sendEmail from "../../helpers/sendEmail";
+import {
+  getCaregiverFeedbackHTML,
+  getCareSeekerFeedbackHTML,
+  getJobAssignmentHTML,
+  getJobCompletionHTML,
+} from "../../helpers/emailText";
+import { caregiverDetails } from "../giver/giver.controller";
 
 export const bookingRequest = async (req: Request, res: Response) => {
   const { appointmentDate, serviceId, durationInDays, selectedCaregivers } =
@@ -91,7 +99,7 @@ export const assignCaregiver = async (req: Request, res: Response) => {
     throw new BadRequestError("Caregiver ID is required.");
   }
 
-  await db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     // Update booking status to active
     const booking = await tx
       .update(BookingModel)
@@ -180,38 +188,108 @@ export const assignCaregiver = async (req: Request, res: Response) => {
     return { booking, assignedCaregiver };
   });
 
+  const updatedbooking = result?.booking[0];
+  const updatedCaregiver = result?.assignedCaregiver[0];
+
+  if (updatedbooking && updatedCaregiver) {
+    const userId = updatedbooking?.userId;
+    const assignedCaregiverId = updatedCaregiver?.caregiverId;
+    const caregiverDetailsPromise = db.query.UserModel.findFirst({
+      where: eq(UserModel.id, assignedCaregiverId),
+      columns: {
+        name: true,
+        email: true,
+      },
+    });
+    const userDetailsPromise = await db.query.UserModel.findFirst({
+      where: eq(UserModel.id, userId),
+      columns: {
+        name: true,
+        email: true,
+      },
+    });
+
+    const [caregiverDetails, userDetails] = await Promise.all([
+      caregiverDetailsPromise,
+      userDetailsPromise,
+    ]);
+
+    const jobDetails = {
+      startDate: updatedbooking?.appointmentDate || "",
+      location: "United states",
+      careSeekerName: userDetails?.name || "User",
+      duration: updatedbooking?.durationInDays || 1,
+    };
+
+    if (caregiverDetails?.email) {
+      await sendEmail({
+        to: caregiverDetails.email,
+        subject: "You’ve Been Assigned a New Caregiving Job!",
+        html: getJobAssignmentHTML(
+          caregiverDetails?.name || "Caregiver",
+          jobDetails
+        ),
+      });
+    }
+  }
+
   return res.status(200).json({
     success: true,
     message: "Caregiver assigned successfully.",
+    result,
   });
 };
 
 export const completeBooking = async (req: Request, res: Response) => {
   const { id: bookingId } = req.params;
 
-  const existingBookingPromise = await db.query.BookingModel.findFirst({
-    where: eq(BookingModel.id, bookingId),
-    columns: {
-      status: true,
-    },
-  });
+  const existingBookingPromise = db
+    .select({
+      status: BookingModel.status,
+      appointmentDate: BookingModel.appointmentDate,
+      durationInDays: BookingModel.durationInDays,
+      careseekerName: UserModel.name,
+      careseekerEmail: UserModel.email,
+    })
+    .from(BookingModel)
+    .innerJoin(UserModel as any, eq(BookingModel.userId, UserModel.id))
+    .where(eq(BookingModel.id, bookingId))
+    .limit(1) as Promise<
+    Array<{
+      status: string;
+      appointmentDate: string;
+      durationInDays: number;
+      careseekerName: string;
+      careseekerEmail: string;
+    }>
+  >;
 
-  const assignedCaregiverPromise = db.query.BookingCaregiver.findFirst({
-    where: and(
-      eq(BookingCaregiver.bookingId, bookingId),
-      eq(BookingCaregiver.status, "active")
-    ),
-    columns: {
-      caregiverId: true,
-      status: true,
-      id: true,
-    },
-  });
+  const assignedCaregiverPromise = db
+    .select({
+      caregiverId: BookingCaregiver.caregiverId,
+      status: BookingCaregiver.status,
+      id: BookingCaregiver.id,
+      caregiverName: UserModel.name,
+      caregiverEmail: UserModel.email,
+    })
+    .from(BookingCaregiver)
+    .innerJoin(UserModel as any, eq(BookingCaregiver.caregiverId, UserModel.id))
+    .where(
+      and(
+        eq(BookingCaregiver.bookingId, bookingId),
+        eq(BookingCaregiver.status, "active")
+      )
+    )
+    .limit(1);
 
-  const [existingBooking, assignedCaregiver] = await Promise.all([
+  const [existingBookingResult, assignedCaregiverResult] = await Promise.all([
     existingBookingPromise,
     assignedCaregiverPromise,
   ]);
+
+  // Extract the first result since db.select() returns an array
+  const existingBooking = existingBookingResult[0] || null;
+  const assignedCaregiver = assignedCaregiverResult[0] || null;
 
   if (!existingBooking) {
     throw new NotFoundError("Booking not found.");
@@ -250,6 +328,55 @@ export const completeBooking = async (req: Request, res: Response) => {
     updatedCaregiver.length === 0
   ) {
     throw new Error("Failed to complete booking.");
+  }
+
+  if (existingBooking && assignedCaregiver) {
+    const jobDetails = {
+      startDate: existingBooking?.appointmentDate || "",
+      endDate: new Date(
+        new Date(existingBooking?.appointmentDate).getTime() +
+          (existingBooking?.durationInDays || 0) * 24 * 60 * 60 * 1000
+      )
+        .toISOString()
+        .split("T")[0],
+      careSeekerName: existingBooking?.careseekerName || null,
+      duration: existingBooking?.durationInDays || null,
+      paymentStatus: "pending" as const,
+      invoiceUrl: null,
+    };
+
+    const caregiverName = assignedCaregiver?.caregiverName;
+    const careseekerName = existingBooking?.careseekerName;
+    const userFeedbackUrl = "";
+    const giverFeedbackUrl = "";
+
+    await sendEmail({
+      to: assignedCaregiver?.caregiverEmail,
+      subject: "Great Job! Your Caregiving Task is Completed",
+      html: getJobCompletionHTML(caregiverName, jobDetails),
+    });
+
+    const seekerFeedbackPromise = sendEmail({
+      to: existingBooking?.careseekerEmail,
+      subject: "Share Your Feedback on Your Recent Caregiving Job ",
+      html: getCareSeekerFeedbackHTML(
+        careseekerName,
+        caregiverName,
+        userFeedbackUrl
+      ),
+    });
+
+    const giverFeedbackPromise = sendEmail({
+      to: assignedCaregiver?.caregiverEmail,
+      subject: ` How Was Your Experience with ${caregiverName}?`,
+      html: getCaregiverFeedbackHTML(
+        caregiverName,
+        careseekerName,
+        giverFeedbackUrl
+      ),
+    });
+
+    await Promise.all([seekerFeedbackPromise, giverFeedbackPromise]);
   }
 
   return res.status(200).json({
