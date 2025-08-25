@@ -2,7 +2,7 @@ import { Server as HTTPServer } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { BadRequestError } from "./errors";
 import { verifyJWTToken } from "./helpers/jwt";
-import { saveMessage } from "./@entities/message/message.service";
+// import { saveMessage } from "./@entities/message/message.service";
 
 let io: SocketIOServer;
 const connectedUsers = new Map();
@@ -44,20 +44,15 @@ export const setUpSocket = (server: HTTPServer) => {
         const { toUserId, message } = data;
         const fromUserId = socket.userId;
 
-        // Save the message to the database
-        const savedMessage = await saveMessage({
-          fromUserId,
-          toUserId,
-          message,
-        });
+        // Todo:Save the message to the database
 
         const recipientSocketId = connectedUsers.get(toUserId);
         const messageData = {
-          id: savedMessage.id,
+          // id: savedMessage.id,
           fromUserId: fromUserId,
           toUserId: toUserId,
           message: message,
-          createdAt: savedMessage.createdAt,
+          // createdAt: savedMessage.createdAt,
           isRead: false,
         };
 
