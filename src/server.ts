@@ -1,6 +1,9 @@
+import { createServer } from "http";
 import app from "./app";
 import { db } from "./db";
 import "dotenv/config";
+
+import { setUpSocket } from "./socket";
 
 process.on("uncaughtException", (err) => {
   console.log(err);
@@ -13,9 +16,13 @@ const startServer = async () => {
     await db.execute("SELECT 1");
     console.log("Connected to database successfully!!!");
 
+    const server = createServer(app);
+    setUpSocket(server);
+    console.log("Socket.IO setup complete!");
+
     // Start the server
     const port = process.env.PORT || 4000;
-    app.listen(port, () => {
+    server.listen(port, () => {
       console.log(`Server is running on port: ${port}`);
     });
   } catch (error) {

@@ -52,6 +52,7 @@ import { planRouter } from "./@entities/plan";
 import { adminRouter } from "./@entities/admin";
 import { trimStringFields } from "./middlewares/trim";
 import BookingRouter from "./@entities/booking/booking.routes";
+import { messageRouter } from "./@entities/message";
 import sendEmail from "./helpers/sendEmail";
 import { getDocumentUploadReminderHTML } from "./helpers/emailText";
 
@@ -68,6 +69,7 @@ app.use("/api/v1/document", documentRouter);
 app.use("/api/v1/plan", planRouter);
 app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/booking", BookingRouter);
+app.use("/api/v1/message", messageRouter);
 
 app.get("/api/v1/email-test", async (_, res: Response) => {
   try {

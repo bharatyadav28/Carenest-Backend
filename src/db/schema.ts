@@ -8,3 +8,4 @@ export * from "../@entities/myService/myService.model";
 export * from "../@entities/plan/plan.model";
 export * from "../@entities/document/document.model";
 export * from "../@entities/booking/booking.model";
+export * from "../@entities/message/message.model";
