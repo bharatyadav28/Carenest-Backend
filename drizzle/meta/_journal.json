@@ -29,6 +29,20 @@
       "when": 1756116222347,
       "tag": "0003_puzzling_zarda",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1756184516834,
+      "tag": "0004_opposite_firelord",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1756184819783,
+      "tag": "0005_previous_timeslip",
+      "breakpoints": true
     }
   ]
 }

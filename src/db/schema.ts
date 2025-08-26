@@ -1,4 +1,3 @@
-// Only export Drizzle models and enums - NOT Zod schemas
 export { UserModel, roleEnum } from "../@entities/user/user.model";
 export { OtpModel, typeEnum } from "../@entities/otp/otp.model";
 export { JobProfileModel } from "../@entities/jobProfile/jobProfile.model";
@@ -18,3 +17,4 @@ export {
   bookingCaregiverStatusEnum,
 } from "../@entities/booking/booking.model";
 export { MessageModel } from "../@entities/message/message.model";
+export { ViewsModel } from "../@entities/views/views.model";

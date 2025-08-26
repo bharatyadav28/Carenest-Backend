@@ -55,6 +55,7 @@ import BookingRouter from "./@entities/booking/booking.routes";
 import { messageRouter } from "./@entities/message";
 import sendEmail from "./helpers/sendEmail";
 import { getDocumentUploadReminderHTML } from "./helpers/emailText";
+import viewsRouter from "./@entities/views/views.routes";
 
 // app.use("/api", trimStringFields);
 
@@ -70,6 +71,7 @@ app.use("/api/v1/plan", planRouter);
 app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/booking", BookingRouter);
 app.use("/api/v1/message", messageRouter);
+app.use("/api/v1/views", viewsRouter);
 
 app.get("/api/v1/email-test", async (_, res: Response) => {
   try {
