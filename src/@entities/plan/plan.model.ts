@@ -1,8 +1,8 @@
 import { pgTable, varchar } from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
+import { z } from "zod";
 
 import { min_timestamps } from "../../helpers/columns";
-import { createInsertSchema } from "drizzle-zod";
 import { integer } from "drizzle-orm/pg-core";
 
 export const PlanModel = pgTable("plan", {
@@ -20,8 +20,8 @@ export const PlanModel = pgTable("plan", {
   ...min_timestamps,
 });
 
-export const createPlanSchema = createInsertSchema(PlanModel).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const createPlanSchema = z.object({
+  type: z.string().trim().max(50),
+  amount: z.number().int().positive(),
+  duration: z.number().int().positive(),
 });

@@ -9,6 +9,7 @@ import {
   date,
 } from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
+import { z } from "zod";
 
 import { min_timestamps } from "../../helpers/columns";
 import { ServiceModel } from "../service/service.model";
@@ -88,4 +89,34 @@ export const BookingCaregiver = pgTable("booking_caregiver", {
   cancellationReason: text("cancellation_reason"),
 
   ...min_timestamps,
+});
+
+// Manual Zod schemas
+export const createBookingSchema = z.object({
+  userId: z.string().trim().max(21),
+  appointmentDate: z.string().trim(), // Will be converted to date
+  serviceId: z.string().trim().max(21),
+  durationInDays: z.number().int().positive(),
+});
+
+export const updateBookingSchema = z.object({
+  appointmentDate: z.string().trim().optional(),
+  durationInDays: z.number().int().positive().optional(),
+  status: z.enum(["requested", "active", "completed", "cancelled"]).optional(),
+  cancellationReason: z.string().trim().optional(),
+  cancelledBy: z.string().trim().max(21).optional(),
+  cancelledByType: z.enum(["user", "giver", "admin"]).optional(),
+});
+
+export const createBookingCaregiverSchema = z.object({
+  bookingId: z.string().trim().max(21),
+  caregiverId: z.string().trim().max(21),
+  isUsersChoice: z.boolean().default(true),
+});
+
+export const updateBookingCaregiverSchema = z.object({
+  status: z
+    .enum(["interested", "rejected", "active", "completed", "cancelled"])
+    .optional(),
+  cancellationReason: z.string().trim().optional(),
 });

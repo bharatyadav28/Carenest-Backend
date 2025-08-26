@@ -6,6 +6,7 @@ import {
   boolean,
 } from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
+import { z } from "zod";
 import { UserModel } from "../user/user.model";
 import { timestamps } from "../../helpers/columns";
 
@@ -49,4 +50,21 @@ export const MessageModel = pgTable("messages", {
   readAt: timestamp("read_at"),
 
   ...timestamps,
+});
+
+// Manual Zod schemas
+export const createConversationSchema = z.object({
+  participant1Id: z.string().trim().max(21),
+  participant2Id: z.string().trim().max(21),
+});
+
+export const createMessageSchema = z.object({
+  conversationId: z.string().trim().max(21),
+  fromUserId: z.string().trim().max(21),
+  message: z.string().trim().min(1),
+});
+
+export const updateMessageSchema = z.object({
+  hasRead: z.boolean().optional(),
+  readAt: z.date().optional(),
 });

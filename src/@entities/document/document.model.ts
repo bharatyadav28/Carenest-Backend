@@ -1,8 +1,8 @@
 import { pgTable, varchar, pgEnum, timestamp } from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
+import { z } from "zod";
 
 import { UserModel } from "../user/user.model";
-import { createInsertSchema } from "drizzle-zod";
 
 export const docTypeEnum = pgEnum("docType", ["resume", "work_permit"]);
 
@@ -23,8 +23,7 @@ export const DocumentModel = pgTable("document", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const createDocumentSchema = createInsertSchema(DocumentModel).omit({
-  id: true,
-  userId: true,
-  createdAt: true,
+export const createDocumentSchema = z.object({
+  type: z.enum(["resume", "work_permit"]).default("work_permit"),
+  fileUrl: z.string().trim().max(255).url(),
 });

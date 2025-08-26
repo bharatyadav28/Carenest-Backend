@@ -1,9 +1,9 @@
 import { pgTable, varchar } from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
+import { z } from "zod";
 
 import { UserModel } from "../user/user.model";
 import { min_timestamps } from "../../helpers/columns";
-import { createInsertSchema } from "drizzle-zod";
 
 export const AboutModel = pgTable("about", {
   id: varchar("id", { length: 21 })
@@ -20,7 +20,6 @@ export const AboutModel = pgTable("about", {
   ...min_timestamps,
 });
 
-export const createAboutSchema = createInsertSchema(AboutModel).omit({
-  id: true,
-  userId: true,
+export const createAboutSchema = z.object({
+  content: z.string().trim().max(1000),
 });

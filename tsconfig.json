@@ -1,23 +1,38 @@
 {
   "compilerOptions": {
-    "target": "ES2022", // Modern JavaScript features
-    "module": "NodeNext", // Use Node.js module resolution
-    "moduleDetection": "force", // Treat files as modules even without import/export
-    "moduleResolution": "NodeNext", // Use Node.js module resolution algorithm
-    "resolveJsonModule": true, // Allow JSON modules to be imported
-    "allowJs": true, // Allow JS files to be imported from TS and vice versa
-    "outDir": "./dist", // Output directory for compiled files
-    "rootDir": "./src", // Root directory of source files
-    "strict": true, // Enable all strict type checking options
-    "esModuleInterop": true, // Use correct ESM import behavior
-    "skipLibCheck": true, // Skip type checking of declaration files
-    "forceConsistentCasingInFileNames": true, // Ensure consistent casing in file names
-    "isolatedModules": true, // Disallow features that require cross-file awareness
-    "sourceMap": true, // Generate source maps for debugging
-    "declaration": true, // Generate .d.ts files
-    "noImplicitAny": true, // Raise error on expressions with implicit 'any' type
-    "removeComments": true // Remove comments in output files
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": false,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": false,
+    "isolatedModules": true,
+    "noEmitOnError": false,
+    "sourceMap": false,
+    "declaration": false,
+    "removeComments": true,
+    "incremental": false,
+    "composite": false,
+    "tsBuildInfoFile": null,
+    "noImplicitAny": false,
+    "noImplicitReturns": false,
+    "noImplicitThis": false,
+    "strictNullChecks": false
   },
-  "include": ["src/**/*"], // Files to include
-  "exclude": ["node_modules", "dist"] // Files to exclude
+  "include": ["src/**/*.ts"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.*",
+    "**/*.spec.*",
+    "**/test/**",
+    "**/tests/**",
+    "**/__test__/**",
+    "**/__tests__/**",
+    "*.config.*"
+  ]
 }

@@ -1,9 +1,9 @@
 import { pgTable, varchar, integer, boolean } from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
+import { z } from "zod";
 
 import { UserModel } from "../user/user.model";
 import { min_timestamps } from "../../helpers/columns";
-import { createInsertSchema } from "drizzle-zod";
 
 export const JobProfileModel = pgTable("job_profile", {
   id: varchar("id", { length: 21 })
@@ -40,7 +40,16 @@ export const JobProfileModel = pgTable("job_profile", {
   ...min_timestamps,
 });
 
-export const createJobProfileSchema = createInsertSchema(JobProfileModel).omit({
-  id: true,
-  userId: true,
+export const createJobProfileSchema = z.object({
+  caregivingType: z.string().trim().max(255),
+  minPrice: z.number().int().min(0).default(0),
+  maxPrice: z.number().int().positive(),
+  locationRange: z.string().trim().max(255),
+  experienceMin: z.number().int().min(0).default(0),
+  experienceMax: z.number().int().positive(),
+  certified: z.boolean().default(false),
+  languages: z.array(z.string().trim().max(255)).optional(),
+  prnMin: z.number().int().min(0).default(0),
+  prnMax: z.number().int().min(0).default(0),
+  isPrn: z.boolean().default(false),
 });

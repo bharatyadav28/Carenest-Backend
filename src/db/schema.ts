@@ -1,11 +1,20 @@
-export * from "../@entities/user/user.model";
-export * from "../@entities/otp/otp.model";
-export * from "../@entities/jobProfile/jobProfile.model";
-export * from "../@entities/about/about.model";
-export * from "../@entities/whyChooseMe/whyChooseMe.model";
-export * from "../@entities/service/service.model";
-export * from "../@entities/myService/myService.model";
-export * from "../@entities/plan/plan.model";
-export * from "../@entities/document/document.model";
-export * from "../@entities/booking/booking.model";
-export * from "../@entities/message/message.model";
+// Only export Drizzle models and enums - NOT Zod schemas
+export { UserModel, roleEnum } from "../@entities/user/user.model";
+export { OtpModel, typeEnum } from "../@entities/otp/otp.model";
+export { JobProfileModel } from "../@entities/jobProfile/jobProfile.model";
+export { AboutModel } from "../@entities/about/about.model";
+export { whyChooseMeModel } from "../@entities/whyChooseMe/whyChooseMe.model";
+export { ServiceModel } from "../@entities/service/service.model";
+export { MyServiceModel } from "../@entities/myService/myService.model";
+export { PlanModel } from "../@entities/plan/plan.model";
+export {
+  DocumentModel,
+  docTypeEnum,
+} from "../@entities/document/document.model";
+export {
+  BookingModel,
+  BookingCaregiver,
+  bookingStatusEnum,
+  bookingCaregiverStatusEnum,
+} from "../@entities/booking/booking.model";
+export { MessageModel } from "../@entities/message/message.model";

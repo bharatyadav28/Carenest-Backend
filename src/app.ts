@@ -56,7 +56,7 @@ import { messageRouter } from "./@entities/message";
 import sendEmail from "./helpers/sendEmail";
 import { getDocumentUploadReminderHTML } from "./helpers/emailText";
 
-app.use("/api", trimStringFields);
+// app.use("/api", trimStringFields);
 
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/giver", giverRouter);
