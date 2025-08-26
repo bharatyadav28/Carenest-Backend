@@ -11,7 +11,7 @@ import {
 import { nanoid } from "nanoid";
 
 import { min_timestamps } from "../../helpers/columns";
-import { ServiceModel } from "../service";
+import { ServiceModel } from "../service/service.model";
 import { UserModel, roleEnum } from "../user/user.model";
 
 export const bookingStatusEnum = pgEnum("booking_status", [

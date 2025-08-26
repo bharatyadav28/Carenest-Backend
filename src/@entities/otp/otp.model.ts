@@ -2,7 +2,7 @@ import { varchar, pgEnum, pgTable, timestamp } from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
 
 import { min_timestamps } from "../../helpers/columns";
-import { UserModel } from "../user";
+import { UserModel } from "../user/user.model";
 import { createInsertSchema } from "drizzle-zod";
 
 export const typeEnum = pgEnum("type", [

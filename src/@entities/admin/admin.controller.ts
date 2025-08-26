@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 
-import { UserModel } from "../user";
+import { UserModel } from "../user/user.model";
 import { db } from "../../db";
 import { eq } from "drizzle-orm";
 import { NotFoundError } from "../../errors";

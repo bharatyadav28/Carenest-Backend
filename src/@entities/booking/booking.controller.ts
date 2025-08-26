@@ -5,9 +5,9 @@ import { db } from "../../db";
 import { BookingCaregiver, BookingModel } from "./booking.model";
 import { and, eq, isNotNull, ne, sql, isNull } from "drizzle-orm";
 import { cancelBooking } from "./booking.service";
-import { ServiceModel } from "../service";
-import { UserModel } from "../user";
-import { JobProfileModel } from "../jobProfile";
+import { ServiceModel } from "../service/service.model";
+import { UserModel } from "../user/user.model";
+import { JobProfileModel } from "../jobProfile/jobProfile.model";
 import {
   bookingStatusType,
   giverBookingStatusType,

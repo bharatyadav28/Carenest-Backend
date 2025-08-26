@@ -12,13 +12,13 @@ import {
   updateUserAvatar,
   UserModel,
 } from "../user";
-import { JobProfileModel } from "../jobProfile";
+import { JobProfileModel } from "../jobProfile/jobProfile.model";
 import { db } from "../../db";
-import { ServiceModel } from "../service";
+import { ServiceModel } from "../service/service.model";
 import { MyServiceModel } from "../myService/myService.model";
 import { add } from "lodash";
-import { AboutModel } from "../about";
-import { whyChooseMeModel } from "../whyChooseMe";
+import { AboutModel } from "../about/about.model";
+import { whyChooseMeModel } from "../whyChooseMe/whyChooseMe.model";
 
 export const changePassword = async (req: Request, res: Response) => {
   const { currentPassword, newPassword } = req.body;

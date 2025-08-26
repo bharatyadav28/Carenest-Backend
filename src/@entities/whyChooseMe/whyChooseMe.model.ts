@@ -1,7 +1,7 @@
 import { varchar } from "drizzle-orm/pg-core";
 import { pgTable } from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
-import { UserModel } from "../user";
+import { UserModel } from "../user/user.model";
 import { min_timestamps } from "../../helpers/columns";
 import { createInsertSchema } from "drizzle-zod";
 

@@ -1,7 +1,7 @@
 import { pgTable, varchar, pgEnum, timestamp } from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
 
-import { UserModel } from "../user";
+import { UserModel } from "../user/user.model";
 import { createInsertSchema } from "drizzle-zod";
 
 export const docTypeEnum = pgEnum("docType", ["resume", "work_permit"]);

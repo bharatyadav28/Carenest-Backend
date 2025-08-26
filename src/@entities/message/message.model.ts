@@ -6,7 +6,7 @@ import {
   boolean,
 } from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
-import { UserModel } from "../user";
+import { UserModel } from "../user/user.model";
 import { timestamps } from "../../helpers/columns";
 
 export const ConversationModel = pgTable("conversations", {

@@ -1,7 +1,7 @@
 import { pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
 
-import { UserModel } from "../user";
-import { ServiceModel } from "../service";
+import { UserModel } from "../user/user.model";
+import { ServiceModel } from "../service/service.model";
 import { createInsertSchema } from "drizzle-zod";
 
 export const MyServiceModel = pgTable("my_service", {
