@@ -1,4 +1,4 @@
-import express from "Express";
+import express from "express";
 import { isSeeker } from "../../middlewares/auth";
 import { manageBookmark, getBookmarkedGivers } from "./bookmark.controller";
 
