@@ -21,3 +21,4 @@ export {
   ConversationModel,
 } from "../@entities/message/message.model";
 export { ViewsModel } from "../@entities/views/views.model";
+export { BookmarkModel } from "../@entities/bookmark/bookmark.model";

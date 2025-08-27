@@ -3,8 +3,7 @@ import { BadRequestError } from "../../errors";
 import { ViewsModel } from "./views.model";
 import { db } from "../../db";
 import { eq } from "drizzle-orm";
-import { UserModel } from "../user";
-import { add } from "lodash";
+import { UserModel } from "../user/user.model";
 
 export const addView = async (req: Request, res: Response) => {
   const { id: giverId } = req.params;

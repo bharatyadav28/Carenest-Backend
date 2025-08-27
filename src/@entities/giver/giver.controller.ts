@@ -10,8 +10,8 @@ import {
   updatePassword,
   updateProfileDetails,
   updateUserAvatar,
-  UserModel,
 } from "../user";
+import { UserModel } from "../user/user.model";
 import { JobProfileModel } from "../jobProfile/jobProfile.model";
 import { db } from "../../db";
 import { ServiceModel } from "../service/service.model";

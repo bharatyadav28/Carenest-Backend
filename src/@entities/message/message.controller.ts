@@ -3,7 +3,7 @@ import { ConversationModel, MessageModel } from "./message.model";
 import { db } from "../../db";
 import { and, or, eq, asc, max, sql, ne } from "drizzle-orm";
 import { BadRequestError } from "../../errors";
-import { UserModel } from "../user";
+import { UserModel } from "../user/user.model";
 
 export const getChatHistory = async (req: Request, res: Response) => {
   const currentUserId = req.user.id;

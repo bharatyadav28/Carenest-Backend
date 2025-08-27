@@ -64,6 +64,20 @@
       "when": 1756211449328,
       "tag": "0008_wakeful_mesmero",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1756282118100,
+      "tag": "0009_long_retro_girl",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1756282860542,
+      "tag": "0010_silent_raider",
+      "breakpoints": true
     }
   ]
 }
