@@ -1,4 +1,4 @@
 import BookingRouter from "./booking.routes";
-import { BookingModel, BookingCaregiver } from "./booking.model";
+import { BookingCaregiver } from "./booking.model";
 
-export { BookingRouter, BookingModel, BookingCaregiver };
+export { BookingRouter, BookingCaregiver };
