@@ -14,6 +14,17 @@ export const auth = async (req: Request, _: Response, next: NextFunction) => {
   next();
 };
 
+export const isSeeker = async (
+  req: Request,
+  _: Response,
+  next: NextFunction
+) => {
+  const authHeader = req.headers["authorization"];
+  const existingUser = await getAuthUser(authHeader, "user");
+  req.user = existingUser;
+  next();
+};
+
 export const isGiver = async (
   req: Request,
   _: Response,

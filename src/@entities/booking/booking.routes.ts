@@ -1,6 +1,6 @@
 import express from "express";
 
-import { auth, isAdmin, isGiver } from "../../middlewares/auth";
+import { auth, isSeeker, isAdmin, isGiver } from "../../middlewares/auth";
 import {
   assignCaregiver,
   bookingRequest,
@@ -18,7 +18,7 @@ import {
 const BookingRouter = express.Router();
 
 BookingRouter.route("/")
-  .post(auth, bookingRequest)
+  .post(isSeeker, bookingRequest)
   .get(isAdmin, getBookingsForAdmin);
 
 BookingRouter.route("/:id")
@@ -28,11 +28,11 @@ BookingRouter.route("/:id")
 BookingRouter.route("/:id/assign").put(isAdmin, assignCaregiver);
 BookingRouter.route("/:id/complete").put(isAdmin, completeBooking);
 
-BookingRouter.route("/:id/cancel/giver").put(isGiver, cancelBookingByGiver);
-BookingRouter.route("/:id/cancel/user").put(auth, cancelBookingByUser);
+// BookingRouter.route("/:id/cancel/giver").put(isGiver, cancelBookingByGiver);
+BookingRouter.route("/:id/cancel/user").put(isSeeker, cancelBookingByUser);
 BookingRouter.route("/:id/cancel/admin").put(isAdmin, cancelBookingByAdmin);
 
 BookingRouter.route("/recent/giver").get(isGiver, getCaregiverBookings);
-BookingRouter.route("/recent/user").get(auth, getUserRecentBookings);
+BookingRouter.route("/recent/user").get(isSeeker, getUserRecentBookings);
 
 export default BookingRouter;

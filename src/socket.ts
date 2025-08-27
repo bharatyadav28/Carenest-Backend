@@ -2,6 +2,10 @@ import { Server as HTTPServer } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { BadRequestError } from "./errors";
 import { verifyJWTToken } from "./helpers/jwt";
+import { saveMessage } from "./@entities/message/message.service";
+import { db } from "./db";
+import { MessageModel } from "./db/schema";
+import { and, eq, ne } from "drizzle-orm";
 // import { saveMessage } from "./@entities/message/message.service";
 
 let io: SocketIOServer;
@@ -44,15 +48,15 @@ export const setUpSocket = (server: HTTPServer) => {
         const { toUserId, message } = data;
         const fromUserId = socket.userId;
 
-        // Todo:Save the message to the database
+        const savedMessage = await saveMessage(fromUserId, toUserId, message);
 
         const recipientSocketId = connectedUsers.get(toUserId);
         const messageData = {
-          // id: savedMessage.id,
+          id: savedMessage.id,
           fromUserId: fromUserId,
           toUserId: toUserId,
           message: message,
-          // createdAt: savedMessage.createdAt,
+          createdAt: savedMessage.createdAt,
           isRead: false,
         };
 
@@ -70,6 +74,29 @@ export const setUpSocket = (server: HTTPServer) => {
           success: false,
           error: "Failed to send message",
         });
+      }
+    });
+
+    socket.on("mark_messages_read", async (data: any) => {
+      try {
+        const { conversationId } = data;
+        const userId = socket.userId;
+
+        await db
+          .update(MessageModel)
+          .set({
+            hasRead: true,
+            readAt: new Date(),
+          })
+          .where(
+            and(
+              eq(MessageModel.conversationId, conversationId),
+              ne(MessageModel.fromUserId, userId),
+              eq(MessageModel.hasRead, false)
+            )
+          );
+      } catch (error) {
+        console.log(":Error", error);
       }
     });
 

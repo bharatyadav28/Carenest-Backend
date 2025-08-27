@@ -72,7 +72,6 @@ export const getAuthUser = async (
   role?: RoleType,
   tokenType?: string
 ) => {
-  const userRole = role ? role : "user";
   const accessToken = authHeader && authHeader.split(" ")?.[1];
   if (!accessToken) {
     throw new UnauthenticatedError("Access token missing");
@@ -82,12 +81,17 @@ export const getAuthUser = async (
 
   if (payload && typeof payload === "object" && "user" in payload) {
     const userId = payload.user.id;
+
+    const baseConditions = [
+      eq(UserModel.id, userId),
+      eq(UserModel.isDeleted, false),
+    ];
+
+    if (role) {
+      baseConditions.push(eq(UserModel.role, role));
+    }
     const existingUser = await db.query.UserModel.findFirst({
-      where: and(
-        eq(UserModel.id, userId),
-        eq(UserModel.isDeleted, false),
-        eq(UserModel.role, userRole)
-      ),
+      where: and(...baseConditions),
       columns: {
         id: true,
         role: true,

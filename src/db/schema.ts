@@ -16,5 +16,8 @@ export {
   bookingStatusEnum,
   bookingCaregiverStatusEnum,
 } from "../@entities/booking/booking.model";
-export { MessageModel } from "../@entities/message/message.model";
+export {
+  MessageModel,
+  ConversationModel,
+} from "../@entities/message/message.model";
 export { ViewsModel } from "../@entities/views/views.model";

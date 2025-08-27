@@ -21,7 +21,7 @@ import {
   signinUserSchema,
   updateUserSchema,
 } from "./user.model";
-import { auth, isGiver } from "../../middlewares/auth";
+import { isSeeker } from "../../middlewares/auth";
 import { upload } from "../../helpers/s3";
 
 const userRouter = express.Router();
@@ -36,18 +36,18 @@ userRouter.route("/google-auth").post(googleAuth);
 
 userRouter.route("/forgot-password").post(forgotPassword);
 userRouter.route("/reset-password").put(resetPassword);
-userRouter.route("/change-password").put(auth, changePassword);
+userRouter.route("/change-password").put(isSeeker, changePassword);
 
 userRouter
   .route("/my-profile")
-  .get(auth, getProfile)
-  .put(auth, validateData(updateUserSchema), updateProfile);
+  .get(isSeeker, getProfile)
+  .put(isSeeker, validateData(updateUserSchema), updateProfile);
 
 userRouter
   .route("/avatar")
-  .put(auth, upload.single("file"), updateAvatar)
-  .delete(auth, removeAvatar);
+  .put(isSeeker, upload.single("file"), updateAvatar)
+  .delete(isSeeker, removeAvatar);
 
-userRouter.route("/").delete(auth, deleteUsersAcccount);
+userRouter.route("/").delete(isSeeker, deleteUsersAcccount);
 
 export default userRouter;

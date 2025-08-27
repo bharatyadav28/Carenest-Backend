@@ -6,7 +6,6 @@ import {
   boolean,
 } from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
-import { z } from "zod";
 import { UserModel } from "../user/user.model";
 import { timestamps } from "../../helpers/columns";
 
@@ -23,8 +22,6 @@ export const ConversationModel = pgTable("conversations", {
   participant2Id: varchar("participant2_id", { length: 21 })
     .notNull()
     .references(() => UserModel.id),
-
-  lastMessageAt: timestamp("last_message_at").defaultNow(),
 
   ...timestamps,
 });
@@ -45,26 +42,9 @@ export const MessageModel = pgTable("messages", {
 
   message: text("message").notNull(),
 
-  hasRead: boolean("is_read").default(false),
+  hasRead: boolean("has_read").default(false),
 
   readAt: timestamp("read_at"),
 
   ...timestamps,
-});
-
-// Manual Zod schemas
-export const createConversationSchema = z.object({
-  participant1Id: z.string().trim().max(21),
-  participant2Id: z.string().trim().max(21),
-});
-
-export const createMessageSchema = z.object({
-  conversationId: z.string().trim().max(21),
-  fromUserId: z.string().trim().max(21),
-  message: z.string().trim().min(1),
-});
-
-export const updateMessageSchema = z.object({
-  hasRead: z.boolean().optional(),
-  readAt: z.date().optional(),
 });
