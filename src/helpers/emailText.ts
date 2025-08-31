@@ -11,7 +11,7 @@ const getCommonEmailTemplate = (
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to CareNest</title>
+    <title>Welcome to CareWorks</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f8;">
     <div style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 32px rgba(35, 61, 77, 0.1);">
@@ -29,12 +29,12 @@ const getCommonEmailTemplate = (
         <div style="background: linear-gradient(135deg, #f8fbff 0%, #fff9f0 100%); padding: 35px 40px; text-align: center; border-top: 1px solid #e8ecf0;">
             <p style="margin: 0 0 15px 0; color: #5a6c7d; font-size: 16px; line-height: 1.6;">
                 Best regards,<br>
-                <strong style="color: #233D4D; font-size: 18px;">The CareNest Team 💙</strong>
+                <strong style="color: #233D4D; font-size: 18px;">The CareWorks Team 💙</strong>
             </p>
             
             <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #e8ecf0;">
                 <p style="margin: 0; color: #8a9aab; font-size: 12px; line-height: 1.5;">
-                    Need help? Contact our support team at <a href="mailto:support@carenest.com" style="color: #F2A307; text-decoration: none;">support@carenest.com</a>
+                    Need help? Contact our support team at <a href="mailto:support@careworks.com" style="color: #F2A307; text-decoration: none;">support@careworks.com</a>
                 </p>
             </div>
         </div>
@@ -46,7 +46,7 @@ const getCommonEmailTemplate = (
 };
 
 export const getSignupHTML = (name: string) => {
-  const heading = "Welcome to CareNest!";
+  const heading = "Welcome to CareWorks!";
   const subHeading = "Your journey as a caregiver starts here";
   const body = `
     <div style="padding: 45px 40px;">
@@ -354,7 +354,7 @@ export const getCaregiverFeedbackHTML = (
             <p style="font-size: 16px; line-height: 1.7; color: #5a6c7d; margin: 0 0 35px 0;">
                 We'd love to hear your feedback on your experience with <strong>${
                   careSeekerName || "the care seeker"
-                }</strong>. Your insights help us improve the CareNest platform.
+                }</strong>. Your insights help us improve the CareWorks platform.
             </p>
             
             <!-- Feedback Invitation Card -->
@@ -445,7 +445,7 @@ export const getCareSeekerFeedbackHTML = (
             
             <div style="background-color: #f8fbff; border-radius: 8px; padding: 20px; text-align: center; margin-top: 30px;">
                 <p style="margin: 0; color: #5a6c7d; font-size: 14px;">
-                    💙 <strong>Your input helps us maintain high-quality care!</strong> Thank you for being part of the CareNest community.
+                    💙 <strong>Your input helps us maintain high-quality care!</strong> Thank you for being part of the CareWorks community.
                 </p>
             </div>
         </div>
@@ -457,8 +457,8 @@ export const getCareSeekerFeedbackHTML = (
 export const getServiceBookingStartReminderHTML = (
   caregiverName?: string,
   careSeekerName?: string,
-  address?: string,
   startDateTime?: string,
+  address?: string,
   jobDetailsUrl?: string
 ) => {
   const heading = "Your Caregiving Job Starts Soon!";
@@ -534,7 +534,7 @@ export const getDocumentUploadReminderHTML = (caregiverName?: string) => {
             </p>
             
             <p style="font-size: 16px; line-height: 1.7; color: #5a6c7d; margin: 0 0 20px 0;">
-                Welcome to CareNest! To start accepting caregiving opportunities, please upload your verification documents.
+                Welcome to CareWorks! To start accepting caregiving opportunities, please upload your verification documents.
             </p>
             
             <p style="font-size: 16px; line-height: 1.7; color: #5a6c7d; margin: 0 0 35px 0;">

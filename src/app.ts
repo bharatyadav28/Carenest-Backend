@@ -10,6 +10,7 @@ import chalk from "chalk";
 
 import errorMiddleware from "./middlewares/error";
 import pageNotFound from "./middlewares/pageNotFound";
+import "./helpers/redis-client";
 
 const app = express();
 

@@ -20,6 +20,7 @@ import {
   getJobCompletionHTML,
 } from "../../helpers/emailText";
 import { caregiverDetails } from "../giver/giver.controller";
+import { scheduleStartJob } from "../../helpers/redis-client";
 
 export const bookingRequest = async (req: Request, res: Response) => {
   const { appointmentDate, serviceId, durationInDays, selectedCaregivers } =
@@ -229,6 +230,11 @@ export const assignCaregiver = async (req: Request, res: Response) => {
           caregiverDetails?.name || "Caregiver",
           jobDetails
         ),
+      });
+
+      await scheduleStartJob({
+        id: updatedbooking.id,
+        startDate: updatedbooking.appointmentDate,
       });
     }
   }

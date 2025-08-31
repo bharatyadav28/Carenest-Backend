@@ -12,3 +12,18 @@ export const generateUniqueId = () => {
   const uuid = uuidv4();
   return uuid;
 };
+
+// Format ISO to date,time
+export function formatDate(isoDate: string): string {
+  const date = new Date(isoDate);
+  const options: Intl.DateTimeFormatOptions = {
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Kolkata",
+  };
+  return new Intl.DateTimeFormat("en-IN", options).format(date);
+}

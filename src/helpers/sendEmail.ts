@@ -31,7 +31,7 @@ const sendEmail = async ({ to, subject, html, attachments }: emailParams) => {
   });
 
   const transporter =
-    process.env.NODE_ENV === "production" ? prodTransporter : prodTransporter;
+    process.env.NODE_ENV === "production" ? prodTransporter : devTransporter;
 
   const mappedAttachments: Attachment[] | undefined = attachments?.map(
     (file) => ({
@@ -42,7 +42,7 @@ const sendEmail = async ({ to, subject, html, attachments }: emailParams) => {
   );
 
   const mailOptions: nodemailer.SendMailOptions = {
-    from: '"Carenest" <carenest@gmail.com>',
+    from: '"Careworks" <careworks@gmail.com>',
     to,
     subject,
     html,
