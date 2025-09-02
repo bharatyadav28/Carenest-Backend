@@ -54,8 +54,6 @@ import { adminRouter } from "./@entities/admin";
 import { trimStringFields } from "./middlewares/trim";
 import BookingRouter from "./@entities/booking/booking.routes";
 import { messageRouter } from "./@entities/message";
-import sendEmail from "./helpers/sendEmail";
-import { getDocumentUploadReminderHTML } from "./helpers/emailText";
 import viewsRouter from "./@entities/views/views.routes";
 import { bookmarkRouter } from "./@entities/bookmark";
 
@@ -78,11 +76,7 @@ app.use("/api/v1/bookmarks", bookmarkRouter);
 
 app.get("/api/v1/email-test", async (_, res: Response) => {
   try {
-    await sendEmail({
-      to: "test@gmail.com",
-      subject: "Welcome to careworks!",
-      html: getDocumentUploadReminderHTML(),
-    });
+    // await sendDocumentUploadReminder();
     return res.status(200).json({
       success: true,
       message: "Email sent successfully!",
