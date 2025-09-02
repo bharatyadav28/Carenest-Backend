@@ -56,7 +56,7 @@ export const generateAndSendOtp = async ({
       </div>
 
       <div style="color: #888888">
-        <p style="margin-bottom: 10px;">Regards, <span style="color:#b19cd9;">Team Carenest</span></p>
+        <p style="margin-bottom: 10px;">Regards, <span style="color:#b19cd9;">Team Careworks</span></p>
       </div>
     
     </div>`;

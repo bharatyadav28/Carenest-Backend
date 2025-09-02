@@ -80,7 +80,7 @@ app.get("/api/v1/email-test", async (_, res: Response) => {
   try {
     await sendEmail({
       to: "test@gmail.com",
-      subject: "Welcome to CareNest!",
+      subject: "Welcome to careworks!",
       html: getDocumentUploadReminderHTML(),
     });
     return res.status(200).json({

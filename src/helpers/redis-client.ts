@@ -1,15 +1,22 @@
 import { Queue, Worker } from "bullmq";
 import { sendServiceReminderEmail } from "../@entities/booking/booking.service";
+import { ConnectionOptions } from "bullmq";
 
-const connection = {
-  host: "redis-15836.c246.us-east-1-4.ec2.redns.redis-cloud.com",
-  port: 15836,
-  password: "ux5jMAFYqRqDj58cNaKJYXiPSXYtMvkC",
+const connection: ConnectionOptions = {
+  host: process.env.REDIS_HOST,
+  port: Number(process.env.REDIS_PORT),
+  password: process.env.REDIS_PASS,
 };
 
 const myQueue = new Queue("careworks-queue", { connection });
 
-export async function scheduleStartJob({ id, startDate }) {
+export async function scheduleStartJob({
+  id,
+  startDate,
+}: {
+  id: string;
+  startDate: string;
+}) {
   const now = new Date();
   const twelveHoursMs = 1000 * 60 * 60 * 12;
 
@@ -20,7 +27,7 @@ export async function scheduleStartJob({ id, startDate }) {
   }
 }
 
-export async function scheduleDocsUploadJob({ id }) {
+export async function scheduleDocsUploadJob({ id }: { id: string }) {
   await myQueue.add("docsUploadReminder", { bookingId: id });
 }
 
