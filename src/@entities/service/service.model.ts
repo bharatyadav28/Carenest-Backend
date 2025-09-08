@@ -16,6 +16,10 @@ export const ServiceModel = pgTable("service", {
 
   image: varchar("image", { length: 255 }).notNull(),
 
+  icon: varchar("icon", { length: 255 }).notNull(),
+
+  highlight: text("highlight").notNull(),
+
   offerings: varchar("offerings", { length: 255 }).array().notNull(),
 
   targetAudience: varchar("target_audience", { length: 255 }).array().notNull(),
@@ -27,6 +31,8 @@ export const CreateServiceSchema = z.object({
   name: z.string().trim().max(255),
   description: z.string().trim(),
   image: z.string().trim().max(255),
+  icon: z.string().trim().max(255),
+  highlight: z.string().trim(),
   offerings: z.array(z.string().trim().max(255)),
   targetAudience: z.array(z.string().trim().max(255)),
 });

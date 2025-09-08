@@ -1,7 +1,12 @@
 import express from "express";
 
 import { isAdmin } from "../../middlewares/auth";
-import { getAdminProfile, updateAdminProfile } from "./admin.controller";
+import {
+  getAdminProfile,
+  updateAdminProfile,
+  uploadFile,
+} from "./admin.controller";
+import { upload } from "../../helpers/s3";
 
 const adminRouter = express.Router();
 
@@ -9,5 +14,7 @@ adminRouter
   .route("/profile")
   .get(isAdmin, getAdminProfile)
   .put(isAdmin, updateAdminProfile);
+
+adminRouter.post("/upload-file", isAdmin, upload.single("file"), uploadFile);
 
 export default adminRouter;

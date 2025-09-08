@@ -4,7 +4,7 @@ import { db } from "../../db";
 import { DocumentModel } from "./document.model";
 import { BadRequestError } from "../../errors";
 import { s3Uploadv4 } from "../../helpers/s3";
-import { cdnURL } from "../../helpers/utils";
+import { cdnURL, getURLPath } from "../../helpers/utils";
 import { eq } from "drizzle-orm";
 
 export const uploadGiversDocuments = async (req: Request, res: Response) => {
@@ -40,7 +40,7 @@ export const saveCaregiverDocuments = async (req: Request, res: Response) => {
     return {
       userId,
       type: doc.type,
-      fileUrl: doc.fileUrl,
+      fileUrl: getURLPath(doc.fileUrl),
     };
   });
 

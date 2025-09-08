@@ -5,6 +5,8 @@ import { db } from "../../db";
 import { eq } from "drizzle-orm";
 import { NotFoundError } from "../../errors";
 import { hashPassword } from "../../helpers/passwordEncrpt";
+import { s3Uploadv4 } from "../../helpers/s3";
+import { cdnURL } from "../../helpers/utils";
 
 export const getAdminProfile = async (req: Request, res: Response) => {
   const profile = await db.query.UserModel.findFirst({
@@ -54,5 +56,23 @@ export const updateAdminProfile = async (req: Request, res: Response) => {
   return res.status(200).json({
     success: true,
     message: "Profile updated successfully",
+  });
+};
+
+export const uploadFile = async (req: Request, res: Response) => {
+  if (!req.file) {
+    throw new NotFoundError("Please upload a file");
+  }
+
+  const folder = "files";
+  const uploadResult = await s3Uploadv4(req.file, folder);
+
+  // Generate image URL
+  const result = `${cdnURL}/${uploadResult.Key}`;
+
+  return res.status(200).json({
+    success: true,
+    message: "Document uploaded successfully",
+    data: { url: result },
   });
 };

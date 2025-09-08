@@ -3,7 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { db } from "../../db";
 import { UserModel } from "./user.model";
 import { UpdateUserType, RoleType } from "../../types/user-types";
-import { getTokenPayload } from "../../helpers/utils";
+import { getTokenPayload, getURLPath } from "../../helpers/utils";
 import {
   BadRequestError,
   NotFoundError,
@@ -200,7 +200,7 @@ export const updateUserAvatar = async (
 
   const updatedUser = await db
     .update(UserModel)
-    .set({ avatar: result ? result.Key : null })
+    .set({ avatar: result ? getURLPath(result.Key) : null })
     .where(eq(UserModel.id, userId))
     .returning();
 

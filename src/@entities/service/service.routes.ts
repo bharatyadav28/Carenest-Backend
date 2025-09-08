@@ -1,5 +1,10 @@
 import express from "express";
-import { addService, getServices, getServicesName } from "./service.controller";
+import {
+  addService,
+  getServices,
+  getServicesHighlight,
+  getServicesName,
+} from "./service.controller";
 import { validateData } from "../../middlewares/validation";
 import { CreateServiceSchema } from "./service.model";
 
@@ -11,5 +16,6 @@ serviceRouter
   .post(validateData(CreateServiceSchema), addService);
 
 serviceRouter.route("/names").get(getServicesName);
+serviceRouter.route("/highlights").get(getServicesHighlight);
 
 export default serviceRouter;

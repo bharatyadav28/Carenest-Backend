@@ -1,0 +1,1 @@
+ALTER TABLE "service" ADD COLUMN "icon" varchar(255) NOT NULL;
