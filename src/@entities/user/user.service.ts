@@ -220,3 +220,15 @@ export const removeUserAvatar = async (userId: string) => {
     throw new Error("Profile image removed successfully");
   }
 };
+
+export const updateZipCode = async (userId: string, zipcode: number) => {
+  const updatedUser = await db
+    .update(UserModel)
+    .set({ zipcode: zipcode })
+    .where(eq(UserModel.id, userId))
+    .returning();
+
+  if (updatedUser.length === 0) {
+    throw new Error("Zipcode updation failed");
+  }
+};

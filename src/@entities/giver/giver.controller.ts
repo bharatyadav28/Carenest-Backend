@@ -10,6 +10,7 @@ import {
   updatePassword,
   updateProfileDetails,
   updateUserAvatar,
+  updateZipCode,
 } from "../user";
 import { UserModel } from "../user/user.model";
 import { JobProfileModel } from "../jobProfile/jobProfile.model";
@@ -194,7 +195,6 @@ export const searchCaregivers = async (req: Request, res: Response) => {
   });
 };
 
-// ...existing code...
 export const caregiverDetails = async (req: Request, res: Response) => {
   const caregiverId = req.params.id;
 
@@ -260,7 +260,6 @@ export const caregiverDetails = async (req: Request, res: Response) => {
     data: { details },
   });
 };
-// ...existing code...
 
 export const getCaregivers = async (req: Request, res: Response) => {
   const { search } = req.query;
@@ -298,5 +297,21 @@ export const getCaregivers = async (req: Request, res: Response) => {
     success: true,
     message: "Caregivers fetched successfully",
     data: { caregivers },
+  });
+};
+
+export const updateGiverZipCode = async (req: Request, res: Response) => {
+  const userId = req.user.id;
+  const { zipcode } = req.body;
+
+  if (!zipcode) {
+    throw new BadRequestError("Please provide a valid zipcode");
+  }
+
+  await updateZipCode(userId, zipcode);
+
+  return res.status(200).json({
+    success: true,
+    message: "Zipcode updated successfully",
   });
 };

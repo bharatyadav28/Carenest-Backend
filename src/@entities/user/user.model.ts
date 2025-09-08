@@ -6,6 +6,7 @@ import {
   boolean,
   pgEnum,
   check,
+  integer,
 } from "drizzle-orm/pg-core";
 
 import { z } from "zod";
@@ -34,6 +35,8 @@ export const UserModel = pgTable(
 
     address: text("address"),
 
+    zipcode: integer("zipcode").notNull(),
+
     gender: varchar("gender", { length: 255 }),
 
     role: roleEnum("role").default("user"),
@@ -61,14 +64,15 @@ export const createUserSchema = z.object({
   gender: z.string().trim().max(255).optional(),
   role: z.enum(["user", "giver", "admin"]).default("user"),
   avatar: z.string().trim().max(255).optional(),
+  zipcode: z.number().int(),
 });
 
 export const updateUserSchema = z.object({
-  email: z.string().trim().email().max(255),
   name: z.string().trim().max(255).optional(),
   gender: z.string().trim().max(255).optional(),
   address: z.string().trim().optional(),
   mobile: z.string().trim().max(15).optional(),
+  zipcode: z.number().int().optional(),
 });
 
 export const signinUserSchema = z.object({

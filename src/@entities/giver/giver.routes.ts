@@ -9,6 +9,7 @@ import {
   removeAvatar,
   searchCaregivers,
   updateAvatar,
+  updateGiverZipCode,
   updateProfile,
 } from "./giver.controller";
 import { validateData } from "../../middlewares/validation";
@@ -36,5 +37,7 @@ giverRouter.route("/").delete(isGiver, deleteGiversAcccount);
 
 giverRouter.route("/search").get(searchCaregivers);
 giverRouter.route("/search/:id").get(caregiverDetails);
+
+giverRouter.route("/zipcode").put(isGiver, updateGiverZipCode);
 
 export default giverRouter;

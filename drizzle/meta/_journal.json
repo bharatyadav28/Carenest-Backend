@@ -78,6 +78,13 @@
       "when": 1756282860542,
       "tag": "0010_silent_raider",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1757327291477,
+      "tag": "0011_dapper_ted_forrester",
+      "breakpoints": true
     }
   ]
 }
