@@ -112,6 +112,7 @@ export const searchCaregivers = async (req: Request, res: Response) => {
     experienceMax,
     certified,
     languages,
+    zipcode,
   } = req.query;
 
   // Filter conditions for searching caregivers
@@ -148,6 +149,10 @@ export const searchCaregivers = async (req: Request, res: Response) => {
   if (certified)
     baseConditions.push(eq(JobProfileModel.certified, certified === "true"));
 
+  if (zipcode) {
+    baseConditions.push(eq(UserModel.zipcode, Number(zipcode)));
+  }
+
   if (languages && typeof languages === "string") {
     const languagesArray = languages.split(",").map((lang) => lang.trim());
     baseConditions.push(
@@ -171,9 +176,9 @@ export const searchCaregivers = async (req: Request, res: Response) => {
       services: sql<string[]>`array_agg(${ServiceModel.name})`.as("services"),
     })
     .from(UserModel)
-    .innerJoin(JobProfileModel as any, eq(UserModel.id, JobProfileModel.userId))
-    .innerJoin(MyServiceModel as any, eq(UserModel.id, MyServiceModel.userId))
-    .innerJoin(
+    .leftJoin(JobProfileModel as any, eq(UserModel.id, JobProfileModel.userId))
+    .leftJoin(MyServiceModel as any, eq(UserModel.id, MyServiceModel.userId))
+    .leftJoin(
       ServiceModel as any,
       eq(MyServiceModel.serviceId, ServiceModel.id)
     )
