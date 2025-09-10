@@ -232,3 +232,15 @@ export const updateZipCode = async (userId: string, zipcode: number) => {
     throw new Error("Zipcode updation failed");
   }
 };
+
+export const updateRequiredBy = async (userId: string, requiredBy: string) => {
+  const updatedUser = await db
+    .update(UserModel)
+    .set({ requiredBy: requiredBy })
+    .where(eq(UserModel.id, userId))
+    .returning();
+
+  if (updatedUser && updatedUser.length === 0) {
+    throw new Error("RequiredBy updation failed");
+  }
+};

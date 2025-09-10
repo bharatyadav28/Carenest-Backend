@@ -43,6 +43,8 @@ export const UserModel = pgTable(
 
     avatar: varchar("avatar", { length: 255 }),
 
+    requiredBy: varchar("required_by", { length: 21 }),
+
     ...timestamps,
   },
   (table) => [

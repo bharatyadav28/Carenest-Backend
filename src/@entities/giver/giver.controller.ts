@@ -212,9 +212,12 @@ export const caregiverDetails = async (req: Request, res: Response) => {
       email: UserModel.email,
       mobile: UserModel.mobile,
       address: UserModel.address,
+      gender: UserModel.gender,
       experience: sql<number>`COALESCE(${JobProfileModel.experienceMax}, 0)`,
       price: sql<number>`COALESCE(${JobProfileModel.minPrice}, 0)`,
       about: sql<string>`COALESCE(${AboutModel.content}, '')`,
+      location: UserModel.address,
+      languages: JobProfileModel.languages,
     })
     .from(UserModel)
     .leftJoin(JobProfileModel as any, eq(UserModel.id, JobProfileModel.userId))
@@ -234,19 +237,9 @@ export const caregiverDetails = async (req: Request, res: Response) => {
     )
     .where(eq(MyServiceModel.userId, caregiverId));
 
-  // Get whyChooseMe separately
-  const whyChooseMePromise = db
-    .select({
-      title: whyChooseMeModel.title,
-      description: whyChooseMeModel.description,
-    })
-    .from(whyChooseMeModel)
-    .where(eq(whyChooseMeModel.userId, caregiverId));
-
-  const [userDetails, services, whyChooseMe] = await Promise.all([
+  const [userDetails, services] = await Promise.all([
     userDetailsPromise,
     servicesPromise,
-    whyChooseMePromise,
   ]);
 
   if (!userDetails.length) {
@@ -256,7 +249,6 @@ export const caregiverDetails = async (req: Request, res: Response) => {
   const details = {
     ...userDetails[0],
     services: services.map((s) => s.name),
-    whyChooseMe: whyChooseMe,
   };
 
   return res.status(200).json({
