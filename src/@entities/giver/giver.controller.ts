@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { lte, sql } from "drizzle-orm";
+import { desc, lte, sql } from "drizzle-orm";
 import { and, eq, gte } from "drizzle-orm";
 
 import { BadRequestError } from "../../errors";
@@ -17,7 +17,7 @@ import { JobProfileModel } from "../jobProfile/jobProfile.model";
 import { db } from "../../db";
 import { ServiceModel } from "../service/service.model";
 import { MyServiceModel } from "../myService/myService.model";
-import { add } from "lodash";
+import { add, orderBy } from "lodash";
 import { AboutModel } from "../about/about.model";
 import { whyChooseMeModel } from "../whyChooseMe/whyChooseMe.model";
 
@@ -288,7 +288,8 @@ export const getCaregivers = async (req: Request, res: Response) => {
     })
     .from(UserModel)
     .leftJoin(JobProfileModel as any, eq(UserModel.id, JobProfileModel.userId))
-    .where(and(...baseConditions));
+    .where(and(...baseConditions))
+    .orderBy(desc(UserModel.createdAt));
 
   return res.status(200).json({
     success: true,

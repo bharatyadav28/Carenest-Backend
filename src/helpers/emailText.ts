@@ -591,3 +591,126 @@ export const getDocumentUploadReminderHTML = (caregiverName?: string) => {
 
   return getCommonEmailTemplate(heading, subHeading, body);
 };
+
+// ...existing code...
+
+export const getAdminCreatedAccountHTML = (
+  userName: string,
+  userEmail: string,
+  temporaryPassword: string,
+  userRole: "giver" | "user" = "giver"
+) => {
+  const heading = "Welcome to CareWorks!";
+  const subHeading = "Your account has been created by our admin team";
+  const loginUrl = userRole === "giver" ? caregiverURL : careseekerURL;
+  const roleDisplayName = userRole === "giver" ? "caregivers" : "care seekers";
+
+  const body = `
+    <div style="padding: 45px 40px;">
+            <p style="font-size: 20px; line-height: 1.6; color: #233D4D; margin: 0 0 15px 0; font-weight: 600;">
+                Hi ${userName || "User"} 👋
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.7; color: #5a6c7d; margin: 0 0 25px 0;">
+                Your CareWorks account has been successfully created by our admin team. We're excited to have you join our community of dedicated ${roleDisplayName}!
+            </p>
+            
+            <!-- Account Details Card -->
+            <div style="background: linear-gradient(135deg, #f8fbff 0%, #fff5e6 100%); border-left: 4px solid #F2A307; border-radius: 12px; padding: 30px; margin: 35px 0;">
+                <h3 style="color: #233D4D; margin: 0 0 25px 0; font-size: 20px; font-weight: 600;">🔑 Your Login Credentials</h3>
+                
+                <div style="background: rgba(255,255,255,0.9); padding: 25px; border-radius: 8px; border: 2px dashed #F2A307;">
+                    <div style="margin-bottom: 20px;">
+                        <p style="margin: 0 0 8px 0; color: #233D4D; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+                            📧 EMAIL (USERNAME)
+                        </p>
+                        <p style="margin: 0; color: #233D4D; font-size: 18px; font-weight: 700; background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #e9ecef; font-family: 'Courier New', monospace;">
+                            ${userEmail}
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <p style="margin: 0 0 8px 0; color: #233D4D; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+                            🔐 TEMPORARY PASSWORD
+                        </p>
+                        <p style="margin: 0; color: #233D4D; font-size: 18px; font-weight: 700; background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #e9ecef; font-family: 'Courier New', monospace;">
+                            ${temporaryPassword}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Security Alert -->
+            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; margin: 30px 0;">
+                <p style="margin: 0; color: #856404; font-size: 16px; font-weight: 600; text-align: center;">
+                    🔒 <strong>Important Security Notice:</strong><br>
+                    <span style="font-weight: 400; font-size: 14px;">Please change your password immediately after your first login for security purposes.</span>
+                </p>
+            </div>
+            
+            <!-- Next Steps -->
+            <div style="background: linear-gradient(135deg, #f8fbff 0%, #fff5e6 100%); border-radius: 12px; padding: 25px; margin: 35px 0;">
+                <h4 style="color: #233D4D; margin: 0 0 20px 0; font-size: 18px; font-weight: 600;">🚀 Next Steps:</h4>
+                
+                <div style="margin-bottom: 15px;">
+                    <div style="width: 24px; height: 24px; background: #F2A307; border-radius: 50%; display: inline-block; text-align: center; line-height: 24px; margin-right: 15px; vertical-align: middle;">
+                        <span style="color: white; font-size: 14px; font-weight: bold;">1</span>
+                    </div>
+                    <span style="color: #233D4D; font-size: 16px; font-weight: 500; vertical-align: middle;">Log in with your credentials</span>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <div style="width: 24px; height: 24px; background: #F2A307; border-radius: 50%; display: inline-block; text-align: center; line-height: 24px; margin-right: 15px; vertical-align: middle;">
+                        <span style="color: white; font-size: 14px; font-weight: bold;">2</span>
+                    </div>
+                    <span style="color: #233D4D; font-size: 16px; font-weight: 500; vertical-align: middle;">Change your password</span>
+                </div>
+                
+                <div style="margin-bottom: ${
+                  userRole === "giver" ? "15px" : "0"
+                };">
+                    <div style="width: 24px; height: 24px; background: #F2A307; border-radius: 50%; display: inline-block; text-align: center; line-height: 24px; margin-right: 15px; vertical-align: middle;">
+                        <span style="color: white; font-size: 14px; font-weight: bold;">3</span>
+                    </div>
+                    <span style="color: #233D4D; font-size: 16px; font-weight: 500; vertical-align: middle;">Complete your profile</span>
+                </div>
+                
+                ${
+                  userRole === "giver"
+                    ? `
+                <div style="margin-bottom: 0;">
+                    <div style="width: 24px; height: 24px; background: #F2A307; border-radius: 50%; display: inline-block; text-align: center; line-height: 24px; margin-right: 15px; vertical-align: middle;">
+                        <span style="color: white; font-size: 14px; font-weight: bold;">4</span>
+                    </div>
+                    <span style="color: #233D4D; font-size: 16px; font-weight: 500; vertical-align: middle;">Upload verification documents</span>
+                </div>
+                `
+                    : ""
+                }
+            </div>
+            
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 45px 0 35px 0;">
+                <a href="${loginUrl}/login" style="display: inline-block; background: linear-gradient(135deg, #233D4D 0%, #F2A307 100%); color: #ffffff; text-decoration: none; padding: 18px 40px; border-radius: 50px; font-weight: 600; font-size: 18px; box-shadow: 0 6px 20px rgba(35, 61, 77, 0.4); border: none; cursor: pointer; transition: all 0.3s ease;">
+                    🚀 Login to Your Account
+                </a>
+            </div>
+            
+            <!-- Additional Info -->
+            <div style="background-color: #f8fbff; border-radius: 8px; padding: 20px; text-align: center; margin-top: 30px;">
+                <p style="margin: 0 0 10px 0; color: #5a6c7d; font-size: 14px;">
+                    💡 <strong>Pro Tip:</strong> ${
+                      userRole === "giver"
+                        ? "Complete your profile and upload documents to start receiving job opportunities!"
+                        : "Complete your profile to start finding the perfect caregiver for your needs!"
+                    }
+                </p>
+                <p style="margin: 0; color: #5a6c7d; font-size: 12px;">
+                    If you experience any issues logging in, please contact our support team.
+                </p>
+            </div>
+        </div>
+    `;
+
+  return getCommonEmailTemplate(heading, subHeading, body);
+};
