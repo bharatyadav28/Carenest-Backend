@@ -7,21 +7,25 @@ import {
   pgEnum,
   text,
   date,
+  check,
+  time,
 } from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
-import { z } from "zod";
 
 import { min_timestamps } from "../../helpers/columns";
 import { ServiceModel } from "../service/service.model";
 import { UserModel, roleEnum } from "../user/user.model";
+import { sql } from "drizzle-orm";
 
-export const bookingStatusEnum = pgEnum("booking_status", [
-  "requested",
-  "active",
+export const bookingStatusValues = [
+  "pending",
+  "accepted",
   "completed",
   "cancelled",
-]);
+] as const;
+export const bookingStatusEnum = pgEnum("booking_status", bookingStatusValues);
 
+// Table1: Main booking model
 export const BookingModel = pgTable("booking", {
   id: varchar("id", { length: 21 })
     .primaryKey()
@@ -32,15 +36,15 @@ export const BookingModel = pgTable("booking", {
     .notNull()
     .references(() => UserModel.id),
 
-  appointmentDate: date("appointment_date").notNull(),
+  startDate: date("start_date").notNull(),
 
-  serviceId: varchar("service_id", { length: 21 })
-    .notNull()
-    .references(() => ServiceModel.id),
+  endDate: date("end_date"),
 
-  durationInDays: integer("duration_in_days").notNull(),
+  careseekerZipcode: integer("zipcode").notNull(),
 
-  status: bookingStatusEnum("status").default("requested"),
+  requiredBy: varchar("required_by", { length: 255 }).notNull(),
+
+  status: bookingStatusEnum("status").default("pending"),
 
   completedAt: timestamp("completed_at"),
 
@@ -57,14 +61,64 @@ export const BookingModel = pgTable("booking", {
   ...min_timestamps,
 });
 
-export const bookingCaregiverStatusEnum = pgEnum("booking_giver_status", [
-  "interested",
+// Table2: Booking to Services mapping table
+export const BookingServices = pgTable("booking_services", {
+  id: varchar("id", { length: 21 })
+    .primaryKey()
+    .notNull()
+    .$defaultFn(() => nanoid(21)),
+
+  bookingId: varchar("booking_id", { length: 21 })
+    .notNull()
+    .references(() => BookingModel.id),
+
+  serviceId: varchar("service_id", { length: 21 })
+    .notNull()
+    .references(() => ServiceModel.id),
+});
+
+// Table3: Weekly schedule for each booking table
+export const BookingWeeklySchedule = pgTable(
+  "booking_weekly_schedule",
+  {
+    id: varchar("id", { length: 21 })
+      .primaryKey()
+      .notNull()
+      .$defaultFn(() => nanoid(21)),
+
+    bookingId: varchar("booking_id", { length: 21 })
+      .notNull()
+      .references(() => BookingModel.id),
+
+    weekDay: integer("week_day").notNull(),
+
+    startTime: time("start_time").notNull(),
+
+    endTime: time("end_time").notNull(),
+
+    ...min_timestamps,
+  },
+  (table) => [
+    check(
+      "week_day_check",
+      sql` ${table.weekDay} >= 0 AND ${table.weekDay} <=6 `
+    ),
+  ]
+);
+
+export const bookingCaregiverStatusValues = [
+  "shortlisted",
   "rejected",
-  "active",
+  "hired",
   "completed",
   "cancelled",
-]);
+] as const;
+export const bookingCaregiverStatusEnum = pgEnum(
+  "booking_giver_status",
+  bookingCaregiverStatusValues
+);
 
+// Table4: Booking Caregiver mapping table
 export const BookingCaregiver = pgTable("booking_caregiver", {
   id: varchar("id", { length: 21 })
     .primaryKey()
@@ -81,42 +135,11 @@ export const BookingCaregiver = pgTable("booking_caregiver", {
 
   isUsersChoice: boolean("is_users_choice").default(true),
 
-  // isFinalSelection: boolean("is_final_selection"),
-  status: bookingCaregiverStatusEnum("status").default("interested"),
+  status: bookingCaregiverStatusEnum("status").default("shortlisted"),
 
   cancelledAt: timestamp("cancelled_at"),
 
   cancellationReason: text("cancellation_reason"),
 
   ...min_timestamps,
-});
-
-// Manual Zod schemas
-export const createBookingSchema = z.object({
-  userId: z.string().trim().max(21),
-  appointmentDate: z.string().trim(), // Will be converted to date
-  serviceId: z.string().trim().max(21),
-  durationInDays: z.number().int().positive(),
-});
-
-export const updateBookingSchema = z.object({
-  appointmentDate: z.string().trim().optional(),
-  durationInDays: z.number().int().positive().optional(),
-  status: z.enum(["requested", "active", "completed", "cancelled"]).optional(),
-  cancellationReason: z.string().trim().optional(),
-  cancelledBy: z.string().trim().max(21).optional(),
-  cancelledByType: z.enum(["user", "giver", "admin"]).optional(),
-});
-
-export const createBookingCaregiverSchema = z.object({
-  bookingId: z.string().trim().max(21),
-  caregiverId: z.string().trim().max(21),
-  isUsersChoice: z.boolean().default(true),
-});
-
-export const updateBookingCaregiverSchema = z.object({
-  status: z
-    .enum(["interested", "rejected", "active", "completed", "cancelled"])
-    .optional(),
-  cancellationReason: z.string().trim().optional(),
 });

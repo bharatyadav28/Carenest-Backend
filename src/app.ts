@@ -52,9 +52,9 @@ import { documentRouter } from "./@entities/document";
 import { planRouter } from "./@entities/plan";
 import { adminRouter } from "./@entities/admin";
 import { trimStringFields } from "./middlewares/trim";
-import BookingRouter from "./@entities/booking/booking.routes";
+import { BookingRouter } from "./@entities/booking";
 import { messageRouter } from "./@entities/message";
-import viewsRouter from "./@entities/views/views.routes";
+import { viewsRouter } from "./@entities/views";
 import { bookmarkRouter } from "./@entities/bookmark";
 
 // app.use("/api", trimStringFields);

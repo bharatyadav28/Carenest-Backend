@@ -15,6 +15,8 @@ export {
   BookingCaregiver,
   bookingStatusEnum,
   bookingCaregiverStatusEnum,
+  BookingWeeklySchedule,
+  BookingServices,
 } from "../@entities/booking/booking.model";
 export {
   MessageModel,

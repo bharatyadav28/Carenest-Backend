@@ -46,19 +46,33 @@ export const cancelBooking = async ({
     throw new Error("Failed to cancel booking or booking already cancelled.");
   }
 
-  await db
-    .update(BookingCaregiver)
-    .set({
-      status: "cancelled",
-      updatedAt: now,
-    })
-    .where(
-      and(
-        eq(BookingCaregiver.bookingId, bookingId),
-        eq(BookingCaregiver.status, "active")
-      )
-    )
-    .returning();
+  await Promise.all([
+    db
+      .update(BookingCaregiver)
+      .set({
+        status: "cancelled",
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(BookingCaregiver.bookingId, bookingId),
+          eq(BookingCaregiver.status, "hired")
+        )
+      ),
+
+    db
+      .update(BookingCaregiver)
+      .set({
+        status: "rejected",
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(BookingCaregiver.bookingId, bookingId),
+          ne(BookingCaregiver.status, "hired")
+        )
+      ),
+  ]);
 };
 
 export const sendServiceReminderEmail = async ({ bookingId }) => {
@@ -68,15 +82,15 @@ export const sendServiceReminderEmail = async ({ bookingId }) => {
       giverName: Caregiver.name,
       giverEmail: Caregiver.email,
       userName: User.name,
-      appointmentDate: BookingModel.appointmentDate,
+      // appointmentDate: BookingModel.appointmentDate,
     })
     .from(BookingModel)
     .where(and(eq(BookingModel.id, bookingId)))
     .innerJoin(
       BookingCaregiver,
       and(
-        eq(BookingCaregiver.bookingId, BookingModel.id),
-        eq(BookingCaregiver.status, "active")
+        eq(BookingCaregiver.bookingId, BookingModel.id)
+        // eq(BookingCaregiver.status, "active")
       )
     )
     .innerJoin(Caregiver, eq(BookingCaregiver.caregiverId, Caregiver.id))
@@ -86,17 +100,16 @@ export const sendServiceReminderEmail = async ({ bookingId }) => {
     throw new Error("No active caregiver found for this booking.");
   }
 
-  const { appointmentDate, giverName, userName } = booking[0];
+  // const { appointmentDate, giverName, userName } = booking[0];
 
-  const startDateTime = formatDate(appointmentDate);
+  // const startDateTime = formatDate(appointmentDate);
 
   await sendEmail({
     to: booking[0].giverEmail,
     subject: "Service Reminder",
-    html: getServiceBookingStartReminderHTML(
-      giverName,
-      userName,
-      startDateTime
-    ),
+    html: getServiceBookingStartReminderHTML(),
+    // giverName,
+    // userName,
+    // startDateTime
   });
 };

@@ -2,8 +2,13 @@ import { Request, Response } from "express";
 
 import { BadRequestError, NotFoundError } from "../../errors";
 import { db } from "../../db";
-import { BookingCaregiver, BookingModel } from "./booking.model";
-import { and, eq, isNotNull, ne, sql, isNull } from "drizzle-orm";
+import {
+  BookingCaregiver,
+  BookingModel,
+  BookingServices,
+  BookingWeeklySchedule,
+} from "./booking.model";
+import { and, eq, isNotNull, ne, sql, isNull, lte, gte } from "drizzle-orm";
 import { cancelBooking } from "./booking.service";
 import { ServiceModel } from "../service/service.model";
 import { UserModel } from "../user/user.model";
@@ -21,69 +26,96 @@ import {
 } from "../../helpers/emailText";
 import { caregiverDetails } from "../giver/giver.controller";
 import { scheduleStartJob } from "../../helpers/redis-client";
+import { zip } from "lodash";
 
 export const bookingRequest = async (req: Request, res: Response) => {
-  const { appointmentDate, serviceId, durationInDays, selectedCaregivers } =
-    req.body;
+  const {
+    shortlistedCaregiversIds,
+    weeklySchedule,
+    serviceIds,
+    ...bookingData
+  } = req.cleanBody;
 
   const userId = req.user.id;
 
-  if (!appointmentDate || !serviceId || !durationInDays) {
-    throw new BadRequestError(
-      "Please provide appointment date, service ID, and duration in days."
-    );
-  }
-
-  if (!selectedCaregivers || selectedCaregivers.length < 3) {
-    throw new BadRequestError(
-      "Please select at least 3 caregivers  for the booking."
-    );
-  }
-
   const now = new Date();
-  const appointmentDateTime = new Date(appointmentDate);
+  const startDate = bookingData.startDate;
+  const startDateTime = new Date(startDate);
 
   // Compare only dates, not time
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const appointmentDateOnly = new Date(
-    appointmentDateTime.getFullYear(),
-    appointmentDateTime.getMonth(),
-    appointmentDateTime.getDate()
+  const startDateOnly = new Date(
+    startDateTime.getFullYear(),
+    startDateTime.getMonth(),
+    startDateTime.getDate()
   );
 
-  if (appointmentDateOnly < today) {
+  if (startDateOnly < today) {
     throw new BadRequestError("Please select a future date");
   }
 
-  const booking = await db
-    .insert(BookingModel)
-    .values({
-      userId,
-      appointmentDate,
-      serviceId,
-      durationInDays,
-    })
-    .returning();
-  if (!booking || booking.length === 0) {
-    throw new Error("Failed to create booking.");
-  }
+  try {
+    await db.transaction(async (tx) => {
+      const booking = await tx
+        .insert(BookingModel)
+        .values({
+          userId,
+          ...bookingData,
+        })
+        .returning();
+      if (!booking || booking.length === 0) {
+        throw new Error("Failed to create booking.");
+      }
 
-  const bookingId = booking[0].id;
-  const selectedGiversRecords = selectedCaregivers.map(
-    (caregiverId: string) => ({
-      caregiverId,
-      bookingId,
-    })
-  );
+      const bookingId = booking[0].id;
 
-  const result = await db
-    .insert(BookingCaregiver)
-    .values(selectedGiversRecords)
-    .returning();
+      const bookingServicesRecords = serviceIds.map((serviceId: string) => ({
+        bookingId,
+        serviceId,
+      }));
 
-  ("result");
-  if (!result || result.length < 2) {
-    throw new Error("Failed to assign caregivers to booking.");
+      const weeklyScheduleRecords = weeklySchedule.map((daySchedule: any) => ({
+        ...daySchedule,
+        bookingId,
+      }));
+      const shortlistedCaregiversRecords = shortlistedCaregiversIds.map(
+        (caregiverId: string) => ({
+          caregiverId,
+          bookingId,
+        })
+      );
+
+      const savedBookingServicesPromise = tx
+        .insert(BookingServices)
+        .values(bookingServicesRecords)
+        .returning();
+      const savedWeeklySchedulePromise = tx
+        .insert(BookingWeeklySchedule)
+        .values(weeklyScheduleRecords)
+        .returning();
+      const shortlistedCaregiversPromise = tx
+        .insert(BookingCaregiver)
+        .values(shortlistedCaregiversRecords)
+        .returning();
+
+      const [savedBookingServices, savedWeeklySchedule, shortlistedCaregivers] =
+        await Promise.all([
+          savedBookingServicesPromise,
+          savedWeeklySchedulePromise,
+          shortlistedCaregiversPromise,
+        ]);
+
+      // Validate all operations succeeded
+      if (
+        !savedBookingServices.length ||
+        !savedWeeklySchedule.length ||
+        !shortlistedCaregivers.length
+      ) {
+        throw new Error("Failed to create booking dependencies.");
+      }
+    });
+  } catch (error) {
+    throw new BadRequestError("Failed to create booking. Please try again.");
   }
 
   return res.status(201).json({
@@ -105,7 +137,7 @@ export const assignCaregiver = async (req: Request, res: Response) => {
     const booking = await tx
       .update(BookingModel)
       .set({
-        status: "active",
+        status: "accepted",
         cancelledAt: null,
         cancellationReason: null,
         cancelledBy: null,
@@ -147,7 +179,7 @@ export const assignCaregiver = async (req: Request, res: Response) => {
         tx
           .update(BookingCaregiver)
           .set({
-            status: "active",
+            status: "hired",
             updatedAt: new Date(),
             cancelledAt: null,
             cancellationReason: null,
@@ -170,7 +202,7 @@ export const assignCaregiver = async (req: Request, res: Response) => {
           .values({
             caregiverId,
             bookingId,
-            status: "active",
+            status: "hired",
             isUsersChoice: false,
           })
           .returning(),
@@ -216,10 +248,9 @@ export const assignCaregiver = async (req: Request, res: Response) => {
     ]);
 
     const jobDetails = {
-      startDate: updatedbooking?.appointmentDate || "",
-      location: "United states",
+      startDate: updatedbooking?.startDate || "",
+      location: updatedbooking?.careseekerZipcode.toString() || "",
       careSeekerName: userDetails?.name || "User",
-      duration: updatedbooking?.durationInDays || 1,
     };
 
     if (caregiverDetails?.email) {
@@ -234,7 +265,7 @@ export const assignCaregiver = async (req: Request, res: Response) => {
 
       await scheduleStartJob({
         id: updatedbooking.id,
-        startDate: updatedbooking.appointmentDate,
+        startDate: updatedbooking.startDate,
       });
     }
   }
@@ -252,8 +283,8 @@ export const completeBooking = async (req: Request, res: Response) => {
   const existingBookingPromise = db
     .select({
       status: BookingModel.status,
-      appointmentDate: BookingModel.appointmentDate,
-      durationInDays: BookingModel.durationInDays,
+      startDate: BookingModel.startDate,
+      endDate: BookingModel.endDate,
       careseekerName: UserModel.name,
       careseekerEmail: UserModel.email,
     })
@@ -263,8 +294,8 @@ export const completeBooking = async (req: Request, res: Response) => {
     .limit(1) as Promise<
     Array<{
       status: string;
-      appointmentDate: string;
-      durationInDays: number;
+      startDate: string;
+      endDate: string;
       careseekerName: string;
       careseekerEmail: string;
     }>
@@ -283,7 +314,7 @@ export const completeBooking = async (req: Request, res: Response) => {
     .where(
       and(
         eq(BookingCaregiver.bookingId, bookingId),
-        eq(BookingCaregiver.status, "active")
+        eq(BookingCaregiver.status, "hired")
       )
     )
     .limit(1);
@@ -338,15 +369,9 @@ export const completeBooking = async (req: Request, res: Response) => {
 
   if (existingBooking && assignedCaregiver) {
     const jobDetails = {
-      startDate: existingBooking?.appointmentDate || "",
-      endDate: new Date(
-        new Date(existingBooking?.appointmentDate).getTime() +
-          (existingBooking?.durationInDays || 0) * 24 * 60 * 60 * 1000
-      )
-        .toISOString()
-        .split("T")[0],
+      startDate: existingBooking?.startDate || "",
+      endDate: existingBooking?.endDate || "",
       careSeekerName: existingBooking?.careseekerName || null,
-      duration: existingBooking?.durationInDays || null,
       paymentStatus: "pending" as const,
       invoiceUrl: null,
     };
@@ -430,7 +455,7 @@ export const cancelBookingByUser = async (req: Request, res: Response) => {
   const isUsersBooking = await db.query.BookingModel.findFirst({
     where: and(
       eq(BookingModel.id, bookingId),
-      eq(BookingModel.userId, req.user.id),
+      // eq(BookingModel.userId, req.user.id),
       ne(BookingModel.status, "cancelled")
     ),
     columns: {
@@ -496,9 +521,18 @@ export const getCaregiverBookings = async (req: Request, res: Response) => {
 
   if (status) {
     status = status.toString().toLowerCase();
-    baseConditions.push(
-      eq(BookingCaregiver.status, status as giverBookingStatusType)
-    );
+    if (status !== "active")
+      baseConditions.push(
+        eq(BookingCaregiver.status, status as giverBookingStatusType)
+      );
+    else
+      baseConditions.push(
+        and(
+          eq(BookingCaregiver.status, "hired"),
+          lte(BookingModel.startDate, new Date().toISOString().split("T")[0]),
+          gte(BookingModel.endDate, new Date().toISOString().split("T")[0])
+        )
+      );
   }
 
   const bookings = await db
@@ -506,9 +540,16 @@ export const getCaregiverBookings = async (req: Request, res: Response) => {
       bookingId: BookingCaregiver.bookingId,
       status: BookingCaregiver.status,
       bookedOn: BookingModel.createdAt,
-      appointmentDate: BookingModel.appointmentDate,
-      duration: BookingModel.durationInDays,
-      service: ServiceModel.name,
+      startDate: BookingModel.startDate,
+      endDate: BookingModel.endDate,
+      zipcode: BookingModel.careseekerZipcode,
+      requiredBy: BookingModel.requiredBy,
+      weeklySchedule: sql`array_agg( json_build_object(
+        'weekDay', ${BookingWeeklySchedule.weekDay},
+        'startTime', ${BookingWeeklySchedule.startTime},
+        'endTime', ${BookingWeeklySchedule.endTime}
+      ))`.as("weeklySchedule"),
+
       user: {
         id: sql<string>`
           CASE
@@ -546,8 +587,21 @@ export const getCaregiverBookings = async (req: Request, res: Response) => {
       BookingModel as any,
       eq(BookingCaregiver.bookingId, BookingModel.id)
     )
-    .innerJoin(ServiceModel as any, eq(BookingModel.serviceId, ServiceModel.id))
-    .innerJoin(UserModel as any, eq(BookingModel.userId, UserModel.id));
+    .innerJoin(UserModel as any, eq(BookingModel.userId, UserModel.id))
+    .innerJoin(
+      BookingWeeklySchedule,
+      eq(BookingWeeklySchedule.bookingId, BookingModel.id)
+    )
+    .groupBy(
+      BookingCaregiver.bookingId,
+      BookingCaregiver.status,
+      BookingModel.createdAt,
+      BookingModel.startDate,
+      BookingModel.endDate,
+      BookingModel.careseekerZipcode,
+      BookingModel.requiredBy,
+      UserModel.id
+    );
 
   return res.status(200).json({
     success: true,
@@ -562,42 +616,63 @@ export const getUserRecentBookings = async (req: Request, res: Response) => {
 
   const baseConditions = [eq(BookingModel.userId, userId)];
   if (status) {
-    baseConditions.push(eq(BookingModel.status, status as bookingStatusType));
+    if (status !== "active")
+      baseConditions.push(eq(BookingModel.status, status as bookingStatusType));
+    else
+      baseConditions.push(
+        and(
+          eq(BookingModel.status, "accepted"),
+          lte(BookingModel.startDate, new Date().toISOString().split("T")[0]),
+          gte(BookingModel.endDate, new Date().toISOString().split("T")[0])
+        )
+      );
   }
 
   const bookings = await db
     .select({
       bookingId: BookingModel.id,
       bookedOn: BookingModel.createdAt,
-      appointmentDate: BookingModel.appointmentDate,
-      duration: BookingModel.durationInDays,
+      startDate: BookingModel.startDate,
+      endDate: BookingModel.endDate,
+      zipcode: BookingModel.careseekerZipcode,
+      requiredBy: BookingModel.requiredBy,
       status: BookingModel.status,
-      serviceName: ServiceModel.name,
 
       caregivers: sql`array_agg(json_build_object(
-        'id', CASE 
+        'id', CASE
           WHEN ${UserModel.isDeleted} = true THEN NULL
           ELSE ${BookingCaregiver.caregiverId}
         END,
-        'name', CASE 
+        'name', CASE
           WHEN ${UserModel.isDeleted} = true THEN 'Deleted User'
           ELSE ${UserModel.name}
         END,
-        'avatar', CASE 
+        'avatar', CASE
           WHEN ${UserModel.isDeleted} = true THEN NULL
           ELSE ${UserModel.avatar}
         END,
         'status', ${BookingCaregiver.status},
-        'experience', CASE 
+        'experience', CASE
           WHEN ${UserModel.isDeleted} = true THEN NULL
           ELSE ${JobProfileModel.experienceMax}
         END,
-        'price', CASE 
+        'price', CASE
           WHEN ${UserModel.isDeleted} = true THEN NULL
           ELSE ${JobProfileModel.minPrice}
         END,
         'isDeleted', ${UserModel.isDeleted}
       ))`.as("caregivers"),
+
+      weeklySchedule: sql`(SELECT json_agg(
+    json_build_object(
+      'weekDay', ${BookingWeeklySchedule.weekDay},
+      'startTime', ${BookingWeeklySchedule.startTime},
+      'endTime', ${BookingWeeklySchedule.endTime})
+    )
+    FROM ${BookingWeeklySchedule}
+    WHERE ${BookingWeeklySchedule.bookingId} = ${BookingModel.id}
+    
+    )`.as("weeklySchedule"),
     })
 
     .from(BookingModel)
@@ -607,15 +682,16 @@ export const getUserRecentBookings = async (req: Request, res: Response) => {
       eq(BookingModel.id, BookingCaregiver.bookingId)
     )
     .innerJoin(UserModel as any, eq(BookingCaregiver.caregiverId, UserModel.id))
-    .innerJoin(ServiceModel as any, eq(BookingModel.serviceId, ServiceModel.id))
     .leftJoin(JobProfileModel as any, eq(UserModel.id, JobProfileModel.userId))
+
     .groupBy(
       BookingModel.id,
       BookingModel.createdAt,
-      BookingModel.appointmentDate,
-      BookingModel.durationInDays,
-      BookingModel.status,
-      ServiceModel.name
+      BookingModel.startDate,
+      BookingModel.endDate,
+      BookingModel.careseekerZipcode,
+      BookingModel.requiredBy,
+      BookingModel.status
     );
 
   return res.status(200).json({
@@ -626,7 +702,7 @@ export const getUserRecentBookings = async (req: Request, res: Response) => {
 };
 
 export const getBookingsForAdmin = async (req: Request, res: Response) => {
-  const { bookedOn, appointmentDate, status, search, page } = req.query;
+  const { bookedOn, startDate, endDate, status, search, page } = req.query;
 
   const pageSize = 10; // Define the number of bookings per page
   const pageNumber = page ? parseInt(page as string, 10) : 1;
@@ -641,15 +717,29 @@ export const getBookingsForAdmin = async (req: Request, res: Response) => {
       )})`
     );
   }
-  if (appointmentDate) {
+  if (startDate) {
     baseConditions.push(
-      sql`DATE(${BookingModel.appointmentDate}) = DATE(${new Date(
-        appointmentDate as string
+      sql`DATE(${BookingModel.startDate}) = DATE(${new Date(
+        startDate as string
       )})`
     );
   }
+  if (endDate) {
+    baseConditions.push(
+      sql`DATE(${BookingModel.endDate}) = DATE(${new Date(endDate as string)})`
+    );
+  }
   if (status) {
-    baseConditions.push(sql`${BookingModel.status} = ${status}`);
+    if (status !== "active")
+      baseConditions.push(sql`${BookingModel.status} = ${status}`);
+    else
+      baseConditions.push(
+        and(
+          eq(BookingModel.status, "accepted"),
+          lte(BookingModel.startDate, new Date().toISOString().split("T")[0]),
+          gte(BookingModel.endDate, new Date().toISOString().split("T")[0])
+        )
+      );
   }
   if (search) {
     baseConditions.push(
@@ -663,8 +753,8 @@ export const getBookingsForAdmin = async (req: Request, res: Response) => {
     .select({
       bookingId: BookingModel.id,
       bookedOn: BookingModel.createdAt,
-      appointmentDate: BookingModel.appointmentDate,
-      duration: BookingModel.durationInDays,
+      startDate: BookingModel.startDate,
+      endDate: BookingModel.endDate,
       status: BookingModel.status,
       user: {
         id: UserModel.id,
@@ -672,12 +762,10 @@ export const getBookingsForAdmin = async (req: Request, res: Response) => {
         email: UserModel.email,
         isDeleted: UserModel.isDeleted,
       },
-      service: ServiceModel.name,
     })
     .from(BookingModel)
     .where(and(...baseConditions))
     .innerJoin(UserModel as any, eq(BookingModel.userId, UserModel.id))
-    .innerJoin(ServiceModel as any, eq(BookingModel.serviceId, ServiceModel.id))
     .limit(pageSize)
     .offset(skip);
 
@@ -687,11 +775,7 @@ export const getBookingsForAdmin = async (req: Request, res: Response) => {
     })
     .from(BookingModel)
     .where(and(...baseConditions))
-    .innerJoin(UserModel as any, eq(BookingModel.userId, UserModel.id))
-    .innerJoin(
-      ServiceModel as any,
-      eq(BookingModel.serviceId, ServiceModel.id)
-    );
+    .innerJoin(UserModel as any, eq(BookingModel.userId, UserModel.id));
 
   const [bookings, totalBookings] = await Promise.all([
     bookingsPromise,
@@ -714,8 +798,8 @@ export const getBookingDetails = async (req: Request, res: Response) => {
     .select({
       bookingId: BookingModel.id,
       bookedOn: BookingModel.createdAt,
-      appointmentDate: BookingModel.appointmentDate,
-      duration: BookingModel.durationInDays,
+      startDate: BookingModel.startDate,
+      endDate: BookingModel.endDate,
       status: BookingModel.status,
       user: {
         id: UserModel.id,
@@ -725,17 +809,32 @@ export const getBookingDetails = async (req: Request, res: Response) => {
         avatar: UserModel.avatar,
         isDeleted: UserModel.isDeleted,
       },
-      service: ServiceModel.name,
       completedAt: BookingModel.completedAt,
       cancelledAt: BookingModel.cancelledAt,
+      weeklySchedule: sql`(
+      SELECT json_agg(json_build_object(
+        'id', id,
+        'weekDay', week_day,
+        'startTime', start_time,
+        'endTime', end_time
+      ))
+      FROM ${BookingWeeklySchedule}
+      WHERE booking_id = ${BookingModel.id}
+    )`.as("weeklySchedule"),
+
+      services: sql`(SELECT json_agg(
+      json_build_object(
+      'id', ${ServiceModel.id},
+      'name', ${ServiceModel.name}
+    )) FROM ${BookingServices}
+     INNER JOIN ${ServiceModel} ON ${ServiceModel.id} = ${BookingServices.serviceId}
+     WHERE ${BookingServices.bookingId} = ${BookingModel.id})
+     
+     `,
     })
     .from(BookingModel)
     .where(eq(BookingModel.id, bookingId))
-    .innerJoin(UserModel as any, eq(BookingModel.userId, UserModel.id))
-    .innerJoin(
-      ServiceModel as any,
-      eq(BookingModel.serviceId, ServiceModel.id)
-    );
+    .innerJoin(UserModel as any, eq(BookingModel.userId, UserModel.id));
 
   const caregiversPromise = db
     .select({
@@ -779,16 +878,16 @@ export const getBookingDetails = async (req: Request, res: Response) => {
 
 export const updateBookingDetails = async (req: Request, res: Response) => {
   const { id: bookingId } = req.params;
-  const { appointmentDate, duration: durationInDays } = req.body;
+  const { startDate, endDate } = req.body;
 
-  if (!appointmentDate || !durationInDays) {
-    throw new BadRequestError("Please provide appointment date and duration.");
+  if (!startDate || !endDate) {
+    throw new BadRequestError("Please provide start date and end date.");
   }
   const updatedBooking = await db
     .update(BookingModel)
     .set({
-      appointmentDate,
-      durationInDays,
+      startDate,
+      endDate,
       updatedAt: new Date(),
     })
     .where(eq(BookingModel.id, bookingId))
@@ -802,5 +901,127 @@ export const updateBookingDetails = async (req: Request, res: Response) => {
     success: true,
     message: "Booking updated successfully.",
     data: { booking: updatedBooking },
+  });
+};
+
+export const addNewWeeklySchedule = async (req: Request, res: Response) => {
+  const { id: bookingId } = req.params;
+  const { weekDay, startTime, endTime } = req.body;
+
+  if (!weekDay || !startTime || !endTime) {
+    throw new BadRequestError(
+      "Please provide week day, start time, and end time."
+    );
+  }
+
+  const alreadyExistingSchedule = await db
+    .select()
+    .from(BookingWeeklySchedule)
+    .where(
+      and(
+        eq(BookingWeeklySchedule.bookingId, bookingId),
+        eq(BookingWeeklySchedule.weekDay, weekDay)
+      )
+    );
+  if (alreadyExistingSchedule && alreadyExistingSchedule.length > 0) {
+    throw new BadRequestError("Schedule for this weekday already exists.");
+  }
+
+  const newSchedule = await db
+    .insert(BookingWeeklySchedule)
+    .values({
+      bookingId,
+      weekDay,
+      startTime,
+      endTime,
+    })
+    .returning();
+
+  if (!newSchedule || newSchedule.length === 0) {
+    throw new BadRequestError("Failed to add new weekly schedule.");
+  }
+
+  return res.status(201).json({
+    success: true,
+    message: "New weekly schedule added successfully.",
+    data: { schedule: newSchedule },
+  });
+};
+
+export const updateWeeklySchedule = async (req: Request, res: Response) => {
+  const { id: bookingId, wId } = req.params;
+  const { weekDay, startTime, endTime } = req.body;
+
+  if (!weekDay || !startTime || !endTime) {
+    throw new BadRequestError(
+      "Please provide week day, start time, and end time."
+    );
+  }
+
+  const alreadyExistingSchedule = await db
+    .select()
+    .from(BookingWeeklySchedule)
+    .where(
+      and(
+        eq(BookingWeeklySchedule.bookingId, bookingId),
+        eq(BookingWeeklySchedule.weekDay, weekDay),
+        ne(BookingWeeklySchedule.id, wId)
+      )
+    );
+  if (alreadyExistingSchedule && alreadyExistingSchedule.length > 0) {
+    throw new BadRequestError("Schedule for this weekday  already exists.");
+  }
+
+  const updatedSchedule = await db
+    .update(BookingWeeklySchedule)
+    .set({
+      weekDay,
+      startTime,
+      endTime,
+    })
+    .where(
+      and(
+        eq(BookingWeeklySchedule.bookingId, bookingId),
+        eq(BookingWeeklySchedule.id, wId)
+      )
+    )
+    .returning();
+
+  if (!updatedSchedule || updatedSchedule.length === 0) {
+    throw new BadRequestError("Failed to update weekly schedule.");
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "Weekly schedule updated successfully.",
+    data: { schedule: updatedSchedule },
+  });
+};
+
+export const deleteWeeklySchedule = async (req: Request, res: Response) => {
+  const { id: bookingId, wId } = req.params;
+  const { weekDay } = req.body;
+
+  if (!weekDay) {
+    throw new BadRequestError("Please provide week day.");
+  }
+
+  const alreadyExistingSchedule = await db
+    .delete(BookingWeeklySchedule)
+    .where(
+      and(
+        eq(BookingWeeklySchedule.bookingId, bookingId),
+        eq(BookingWeeklySchedule.id, wId)
+      )
+    )
+    .returning();
+
+  if (!alreadyExistingSchedule || alreadyExistingSchedule.length === 0) {
+    throw new BadRequestError("Failed to delete weekly schedule.");
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "Weekly schedule deleted successfully.",
   });
 };

@@ -120,7 +120,6 @@ export const getJobAssignmentHTML = (
     startDate: string;
     location: string;
     careSeekerName: string;
-    duration: number;
   }
 ) => {
   const heading = "🎉 New Job Assignment!";
@@ -163,14 +162,7 @@ export const getJobAssignmentHTML = (
                           jobDetails?.careSeekerName
                         }</span>
                     </div>
-                    
-                    <div style="margin-bottom: 0;">
-                        <span style="color: #F2A307; font-size: 16px; margin-right: 10px;">⏱️</span>
-                        <strong style="color: #233D4D; font-size: 14px;">Duration:</strong>
-                        <span style="color: #5a6c7d; font-size: 16px; margin-left: 8px;">${
-                          jobDetails?.duration
-                        } days</span>
-                    </div>
+              
                 </div>
             </div>
             
@@ -210,7 +202,7 @@ export const getJobCompletionHTML = (
     startDate: string;
     endDate: string | null;
     careSeekerName: string | null;
-    duration: number | null;
+    duration?: number | null;
     paymentStatus: "pending" | "released" | null;
     invoiceUrl: string | null;
   }

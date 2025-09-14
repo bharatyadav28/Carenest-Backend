@@ -1,1 +1,3 @@
-export * from "./views.routes";
+import viewsRouter from "./views.routes";
+
+export { viewsRouter };

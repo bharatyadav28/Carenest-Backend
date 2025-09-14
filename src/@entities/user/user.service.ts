@@ -99,7 +99,7 @@ export const getAuthUser = async (
     });
 
     if (!existingUser) {
-      throw new NotFoundError("User not found");
+      throw new NotFoundError("Invalid access token");
     }
 
     return existingUser;

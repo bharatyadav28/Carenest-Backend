@@ -2,23 +2,28 @@ import express from "express";
 
 import { auth, isSeeker, isAdmin, isGiver } from "../../middlewares/auth";
 import {
-  assignCaregiver,
   bookingRequest,
+  assignCaregiver,
   completeBooking,
-  cancelBookingByGiver,
+  // cancelBookingByGiver,
   cancelBookingByUser,
+  cancelBookingByAdmin,
   getCaregiverBookings,
   getUserRecentBookings,
   getBookingsForAdmin,
   getBookingDetails,
-  cancelBookingByAdmin,
   updateBookingDetails,
+  updateWeeklySchedule,
+  deleteWeeklySchedule,
+  addNewWeeklySchedule,
 } from "./booking.controller";
+import { validateData } from "../../middlewares/validation";
+import { createBookingSchema } from "./booking.schema";
 
 const BookingRouter = express.Router();
 
 BookingRouter.route("/")
-  .post(isSeeker, bookingRequest)
+  .post(isSeeker, validateData(createBookingSchema), bookingRequest)
   .get(isAdmin, getBookingsForAdmin);
 
 BookingRouter.route("/:id")
@@ -28,11 +33,16 @@ BookingRouter.route("/:id")
 BookingRouter.route("/:id/assign").put(isAdmin, assignCaregiver);
 BookingRouter.route("/:id/complete").put(isAdmin, completeBooking);
 
-// BookingRouter.route("/:id/cancel/giver").put(isGiver, cancelBookingByGiver);
+// // BookingRouter.route("/:id/cancel/giver").put(isGiver, cancelBookingByGiver);
 BookingRouter.route("/:id/cancel/user").put(isSeeker, cancelBookingByUser);
 BookingRouter.route("/:id/cancel/admin").put(isAdmin, cancelBookingByAdmin);
 
 BookingRouter.route("/recent/giver").get(isGiver, getCaregiverBookings);
 BookingRouter.route("/recent/user").get(isSeeker, getUserRecentBookings);
+
+BookingRouter.route("/:id/weekly-schedule").post(isAdmin, addNewWeeklySchedule);
+BookingRouter.route("/:id/weekly-schedule/:wId")
+  .put(isAdmin, updateWeeklySchedule)
+  .delete(isAdmin, deleteWeeklySchedule);
 
 export default BookingRouter;

@@ -13,8 +13,6 @@ export const addService = async (req: Request, res: Response) => {
     icon: getURLPath(serviceData.icon),
   };
 
-  console.log("Update data:", updatedData);
-
   const service = await db.insert(ServiceModel).values(updatedData).returning();
   if (!service || service.length === 0) {
     throw new Error("Failed to add service");
