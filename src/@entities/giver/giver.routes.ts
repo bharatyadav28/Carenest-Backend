@@ -5,6 +5,7 @@ import {
   changePassword,
   deleteGiversAcccount,
   getCaregivers,
+  getGiverZipCode,
   getProfile,
   removeAvatar,
   searchCaregivers,
@@ -38,6 +39,9 @@ giverRouter.route("/").delete(isGiver, deleteGiversAcccount);
 giverRouter.route("/search").get(searchCaregivers);
 giverRouter.route("/search/:id").get(caregiverDetails);
 
-giverRouter.route("/zipcode").put(isGiver, updateGiverZipCode);
+giverRouter
+  .route("/zipcode")
+  .put(isGiver, updateGiverZipCode)
+  .get(isGiver, getGiverZipCode);
 
 export default giverRouter;

@@ -313,3 +313,25 @@ export const updateGiverZipCode = async (req: Request, res: Response) => {
     message: "Zipcode updated successfully",
   });
 };
+
+export const getGiverZipCode = async (req: Request, res: Response) => {
+  const userId = req.user.id;
+
+  const user = await db
+    .select()
+    .from(UserModel)
+    .where(eq(UserModel.id, userId))
+    .limit(1);
+
+  if (!user || user.length === 0) {
+    throw new BadRequestError("User not found");
+  }
+
+  const zipcode = user[0].zipcode;
+
+  return res.status(200).json({
+    success: true,
+    message: "Zipcode fetched successfully",
+    data: { zipcode },
+  });
+};

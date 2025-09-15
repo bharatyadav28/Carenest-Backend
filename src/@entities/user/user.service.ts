@@ -163,6 +163,7 @@ export const fetchProfileDetails = async (userId: string) => {
       mobile: true,
       avatar: true,
       gender: true,
+      zipcode: true,
     },
   });
 
