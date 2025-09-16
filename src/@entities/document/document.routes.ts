@@ -2,8 +2,11 @@ import express from "express";
 import { isGiver } from "../../middlewares/auth";
 import { upload } from "../../helpers/s3";
 import {
+  deleteCaregiverDocument,
+  getCaregiverCertificates,
   getCaregiverDocuments,
   saveCaregiverDocuments,
+  saveGiverCertificate,
   uploadGiversDocuments,
 } from "./document.controller";
 
@@ -20,5 +23,11 @@ documentRouter
   .route("/")
   .post(isGiver, saveCaregiverDocuments)
   .get(isGiver, getCaregiverDocuments);
+documentRouter.delete("/:id", isGiver, deleteCaregiverDocument);
+
+documentRouter
+  .route("/certificates")
+  .get(isGiver, getCaregiverCertificates)
+  .post(isGiver, saveGiverCertificate);
 
 export default documentRouter;

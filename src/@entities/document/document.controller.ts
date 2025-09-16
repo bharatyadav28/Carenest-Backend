@@ -5,7 +5,9 @@ import { DocumentModel } from "./document.model";
 import { BadRequestError } from "../../errors";
 import { s3Uploadv4 } from "../../helpers/s3";
 import { cdnURL, getURLPath } from "../../helpers/utils";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+import { fi } from "zod/v4/locales/index.cjs";
+import { create } from "lodash";
 
 export const uploadGiversDocuments = async (req: Request, res: Response) => {
   if (!req.file) {
@@ -30,7 +32,7 @@ export const saveCaregiverDocuments = async (req: Request, res: Response) => {
   const documents = req.body.documents;
 
   if (!documents || !Array.isArray(documents)) {
-    return res.status(400).json({ error: "Invalid documents format" });
+    throw new BadRequestError("Please provide documents");
   }
 
   const formattedDocuments = documents.map((doc: any) => {
@@ -58,6 +60,7 @@ export const saveCaregiverDocuments = async (req: Request, res: Response) => {
 
 export const getCaregiverDocuments = async (req: Request, res: Response) => {
   const userId = req.user.id;
+
   const documents = await db
     .select()
     .from(DocumentModel)
@@ -67,5 +70,81 @@ export const getCaregiverDocuments = async (req: Request, res: Response) => {
     success: true,
     message: "Documents retrieved successfully",
     data: { documents },
+  });
+};
+
+export const getCaregiverCertificates = async (req: Request, res: Response) => {
+  const userId = req.user.id;
+
+  const certificates = await db
+    .select({
+      id: DocumentModel.id,
+      fileUrl: DocumentModel.fileUrl,
+      createdAt: DocumentModel.createdAt,
+    })
+    .from(DocumentModel)
+    .where(
+      and(
+        eq(DocumentModel.type, "certificate"),
+        eq(DocumentModel.userId, userId)
+      )
+    );
+
+  return res.status(200).json({
+    success: true,
+    message: "Certificates retrieved successfully",
+    data: { certificates },
+  });
+};
+
+export const deleteCaregiverDocument = async (req: Request, res: Response) => {
+  const userId = req.user.id;
+  const documentId = req.params.id;
+
+  const deletedDocument = await db
+    .delete(DocumentModel)
+    .where(
+      and(eq(DocumentModel.id, documentId), eq(DocumentModel.userId, userId))
+    )
+    .returning();
+
+  if (deletedDocument.length === 0) {
+    throw new BadRequestError(
+      "Document not found or you do not have permission to delete it"
+    );
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "Document deleted successfully",
+  });
+};
+
+export const saveGiverCertificate = async (req: Request, res: Response) => {
+  const userId = req.user.id;
+  const fileUrl = req.body.fileUrl;
+
+  if (!fileUrl) {
+    throw new BadRequestError("Please provide a file URL");
+  }
+
+  const formattedDocument = {
+    userId,
+    type: "certificate" as const,
+    fileUrl: getURLPath(fileUrl),
+  };
+
+  const certificate = await db
+    .insert(DocumentModel)
+    .values(formattedDocument)
+    .returning();
+
+  if (!certificate || certificate.length === 0) {
+    throw new BadRequestError("Failed to save certificate");
+  }
+
+  return res.status(201).json({
+    success: true,
+    message: "Certificate saved successfully",
   });
 };

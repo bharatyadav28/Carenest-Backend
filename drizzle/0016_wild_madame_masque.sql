@@ -1,0 +1,1 @@
+ALTER TYPE "public"."docType" ADD VALUE 'certificate';

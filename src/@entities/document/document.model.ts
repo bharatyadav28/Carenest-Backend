@@ -4,7 +4,11 @@ import { z } from "zod";
 
 import { UserModel } from "../user/user.model";
 
-export const docTypeEnum = pgEnum("docType", ["resume", "work_permit"]);
+export const docTypeEnum = pgEnum("docType", [
+  "resume",
+  "work_permit",
+  "certificate",
+]);
 
 export const DocumentModel = pgTable("document", {
   id: varchar("id", { length: 21 })
