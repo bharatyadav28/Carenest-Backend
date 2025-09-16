@@ -16,6 +16,8 @@ import {
   updateWeeklySchedule,
   deleteWeeklySchedule,
   addNewWeeklySchedule,
+  seekerBookingsForProfile,
+  giverBookingsForProfile,
 } from "./booking.controller";
 import { validateData } from "../../middlewares/validation";
 import { createBookingSchema } from "./booking.schema";
@@ -44,5 +46,8 @@ BookingRouter.route("/:id/weekly-schedule").post(isAdmin, addNewWeeklySchedule);
 BookingRouter.route("/:id/weekly-schedule/:wId")
   .put(isAdmin, updateWeeklySchedule)
   .delete(isAdmin, deleteWeeklySchedule);
+
+BookingRouter.route("/seeker/:id").get(isAdmin, seekerBookingsForProfile);
+BookingRouter.route("/giver/:id").get(isAdmin, giverBookingsForProfile);
 
 export default BookingRouter;

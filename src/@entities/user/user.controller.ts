@@ -1,5 +1,5 @@
-import { Request, Response } from "express";
-import { eq, and } from "drizzle-orm";
+import { query, Request, Response } from "express";
+import { eq, and, desc, or, sql, ilike, count } from "drizzle-orm";
 
 import { UserModel } from "./user.model";
 import { db } from "../../db";
@@ -22,6 +22,7 @@ import {
 } from "./user.service";
 import sendEmail from "../../helpers/sendEmail";
 import { getSignupHTML } from "../../helpers/emailText";
+import { BookingModel } from "../booking/booking.model";
 
 export const signup = async (req: Request, res: Response) => {
   const incomingData = req.cleanBody;
@@ -402,5 +403,91 @@ export const deleteUsersAcccount = async (req: Request, res: Response) => {
   return res.status(200).json({
     success: true,
     message: "Account deleted successfully",
+  });
+};
+
+export const getAllUsersForAdmin = async (req: Request, res: Response) => {
+  const { search, hasDoneBooking } = req.query;
+
+  const baseConditions = [
+    eq(UserModel.isDeleted, false),
+    eq(UserModel.role, "user"),
+  ];
+  if (search && typeof search === "string") {
+    const searchTerm = `%${search}%`;
+    baseConditions.push(
+      or(
+        ilike(UserModel.name, searchTerm),
+        ilike(UserModel.email, searchTerm),
+        ilike(UserModel.mobile, searchTerm)
+      )
+    );
+  }
+
+  if (hasDoneBooking !== undefined) {
+    const hasBooking = hasDoneBooking === "true";
+    if (hasBooking) {
+      baseConditions.push(
+        sql`EXISTS (SELECT 1 FROM booking WHERE ${BookingModel.userId} = ${UserModel.id} )`
+      );
+    } else {
+      baseConditions.push(
+        sql`NOT EXISTS (SELECT 1 FROM booking WHERE ${BookingModel.userId} = ${UserModel.id} )`
+      );
+    }
+  }
+
+  let users = await db
+    .select({
+      id: UserModel.id,
+      name: UserModel.name,
+      email: UserModel.email,
+      mobile: UserModel.mobile,
+      gender: UserModel.gender,
+      bookings: count(BookingModel.id),
+    })
+    .from(UserModel)
+    .orderBy(desc(UserModel.createdAt))
+    .leftJoin(BookingModel, eq(UserModel.id, BookingModel.userId))
+    .groupBy(UserModel.id)
+    .where(and(...baseConditions));
+
+  return res.status(200).json({
+    success: true,
+    message: "Users fetched successfully",
+    data: {
+      users,
+    },
+  });
+};
+
+export const getUserProfileforAdmin = async (req: Request, res: Response) => {
+  const { id: userId } = req.params;
+
+  const userDetails = await db
+    .select({
+      id: UserModel.id,
+      name: UserModel.name,
+      email: UserModel.email,
+      mobile: UserModel.mobile,
+      address: UserModel.address,
+      zipcode: UserModel.zipcode,
+      gender: UserModel.gender,
+      avatar: UserModel.avatar,
+    })
+    .from(UserModel)
+    .where(eq(UserModel.id, userId))
+    .limit(1);
+
+  if (!userDetails) {
+    throw new NotFoundError("User not found");
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "User details fetched successfully",
+    data: {
+      user: userDetails,
+    },
   });
 };

@@ -4,8 +4,10 @@ import {
   caregiverDetails,
   changePassword,
   deleteGiversAcccount,
+  getAllGiversForAdmin,
   getCaregivers,
   getGiverZipCode,
+  getProfessionalProfileforAdmin,
   getProfile,
   removeAvatar,
   searchCaregivers,
@@ -43,5 +45,8 @@ giverRouter
   .route("/zipcode")
   .put(isGiver, updateGiverZipCode)
   .get(isGiver, getGiverZipCode);
+
+giverRouter.route("/all").get(isAdmin, getAllGiversForAdmin);
+giverRouter.route("/all/:id").get(isAdmin, getProfessionalProfileforAdmin);
 
 export default giverRouter;

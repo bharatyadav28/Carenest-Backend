@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
-import { desc, lte, sql } from "drizzle-orm";
+import { count, desc, ilike, lte, or, sql } from "drizzle-orm";
 import { and, eq, gte } from "drizzle-orm";
 
-import { BadRequestError } from "../../errors";
+import { BadRequestError, NotFoundError } from "../../errors";
 import {
   deleteUser,
   fetchProfileDetails,
@@ -20,6 +20,7 @@ import { MyServiceModel } from "../myService/myService.model";
 import { add, orderBy } from "lodash";
 import { AboutModel } from "../about/about.model";
 import { whyChooseMeModel } from "../whyChooseMe/whyChooseMe.model";
+import { BookingCaregiver } from "../booking";
 
 export const changePassword = async (req: Request, res: Response) => {
   const { currentPassword, newPassword } = req.body;
@@ -333,5 +334,92 @@ export const getGiverZipCode = async (req: Request, res: Response) => {
     success: true,
     message: "Zipcode fetched successfully",
     data: { zipcode },
+  });
+};
+
+export const getAllGiversForAdmin = async (req: Request, res: Response) => {
+  const { search, hasSubscription } = req.query;
+
+  const baseConditions = [
+    eq(UserModel.isDeleted, false),
+    eq(UserModel.role, "giver"),
+  ];
+  if (search && typeof search === "string") {
+    const searchTerm = `%${search}%`;
+    baseConditions.push(
+      or(
+        ilike(UserModel.name, searchTerm),
+        ilike(UserModel.email, searchTerm),
+        ilike(UserModel.mobile, searchTerm)
+      )
+    );
+  }
+
+  let users = await db
+    .select({
+      id: UserModel.id,
+      name: UserModel.name,
+      email: UserModel.email,
+      mobile: UserModel.mobile,
+      gender: UserModel.gender,
+
+      totalBookingsAllocated: sql<number>`COUNT(
+      CASE
+        WHEN ${BookingCaregiver.status} = 'hired' OR ${BookingCaregiver.status} = 'completed' THEN 1
+      END 
+      )::integer`.as("totalBookingsAllocated"),
+    })
+    .from(UserModel)
+    .where(and(...baseConditions))
+    .orderBy(desc(UserModel.createdAt))
+    .leftJoin(BookingCaregiver, eq(BookingCaregiver.caregiverId, UserModel.id))
+    .groupBy(
+      UserModel.id,
+      UserModel.name,
+      UserModel.email,
+      UserModel.mobile,
+      UserModel.gender
+    );
+
+  return res.status(200).json({
+    success: true,
+    message: "Users fetched successfully",
+    data: {
+      users,
+    },
+  });
+};
+
+export const getProfessionalProfileforAdmin = async (
+  req: Request,
+  res: Response
+) => {
+  const { id: userId } = req.params;
+
+  const userDetails = await db
+    .select({
+      id: UserModel.id,
+      name: UserModel.name,
+      email: UserModel.email,
+      mobile: UserModel.mobile,
+      address: UserModel.address,
+      zipcode: UserModel.zipcode,
+      gender: UserModel.gender,
+      avatar: UserModel.avatar,
+    })
+    .from(UserModel)
+    .where(eq(UserModel.id, userId))
+    .limit(1);
+
+  if (!userDetails) {
+    throw new NotFoundError("User not found");
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "User details fetched successfully",
+    data: {
+      user: userDetails,
+    },
   });
 };

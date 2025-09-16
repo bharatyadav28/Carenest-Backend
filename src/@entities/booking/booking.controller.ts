@@ -8,7 +8,18 @@ import {
   BookingServices,
   BookingWeeklySchedule,
 } from "./booking.model";
-import { and, eq, isNotNull, ne, sql, isNull, lte, gte } from "drizzle-orm";
+import {
+  and,
+  eq,
+  isNotNull,
+  ne,
+  sql,
+  isNull,
+  lte,
+  gte,
+  desc,
+  is,
+} from "drizzle-orm";
 import { cancelBooking } from "./booking.service";
 import { ServiceModel } from "../service/service.model";
 import { UserModel } from "../user/user.model";
@@ -1023,5 +1034,58 @@ export const deleteWeeklySchedule = async (req: Request, res: Response) => {
   return res.status(200).json({
     success: true,
     message: "Weekly schedule deleted successfully.",
+  });
+};
+
+export const seekerBookingsForProfile = async (req: Request, res: Response) => {
+  const userId = req.params.id;
+
+  const bookings = await db
+    .select({
+      id: BookingModel.id,
+      startDate: BookingModel.startDate,
+      status: BookingModel.status,
+      bookedOn: BookingModel.createdAt,
+      completedAt: BookingModel.completedAt,
+    })
+    .from(BookingModel)
+    .where(eq(BookingModel.userId, userId))
+    .orderBy(sql`${BookingModel.createdAt} DESC`);
+
+  return res.status(200).json({
+    success: true,
+    message: "User bookings retrieved successfully.",
+    data: { bookings },
+  });
+};
+
+export const giverBookingsForProfile = async (req: Request, res: Response) => {
+  const giversId = req.params.id;
+
+  const bookings = await db
+    .select({
+      id: BookingCaregiver.id,
+      bookingId: BookingCaregiver.bookingId,
+      isUsersChoice: BookingCaregiver.isUsersChoice,
+      status: BookingCaregiver.status,
+      cancelledAt: BookingCaregiver.cancelledAt,
+    })
+    .from(BookingCaregiver)
+    .where(eq(BookingCaregiver.caregiverId, giversId))
+    .orderBy(desc(BookingCaregiver.createdAt));
+
+  const bookingAnalytics = await db
+    .select({
+      hired: sql`COUNT(CASE WHEN ${BookingCaregiver.status} = 'hired' THEN 1 END)::integer`,
+      completed: sql`COUNT(CASE WHEN ${BookingCaregiver.status} = 'completed' THEN 1 END)::integer`,
+      cancelled: sql`COUNT(CASE WHEN ${BookingCaregiver.status} = 'cancelled' THEN 1 END)::integer`,
+    })
+    .from(BookingCaregiver)
+    .where(eq(BookingCaregiver.caregiverId, giversId));
+
+  return res.status(200).json({
+    success: true,
+    message: "Giver bookings retrieved successfully.",
+    data: { bookings, bookingAnalytics },
   });
 };

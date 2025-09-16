@@ -14,6 +14,8 @@ import {
   updateAvatar,
   removeAvatar,
   deleteUsersAcccount,
+  getAllUsersForAdmin,
+  getUserProfileforAdmin,
 } from "./user.controller";
 import { validateData } from "../../middlewares/validation";
 import {
@@ -21,7 +23,7 @@ import {
   signinUserSchema,
   updateUserSchema,
 } from "./user.model";
-import { isSeeker } from "../../middlewares/auth";
+import { isAdmin, isSeeker } from "../../middlewares/auth";
 import { upload } from "../../helpers/s3";
 
 const userRouter = express.Router();
@@ -49,5 +51,8 @@ userRouter
   .delete(isSeeker, removeAvatar);
 
 userRouter.route("/").delete(isSeeker, deleteUsersAcccount);
+
+userRouter.route("/all").get(isAdmin, getAllUsersForAdmin);
+userRouter.route("/all/:id").get(isAdmin, getUserProfileforAdmin);
 
 export default userRouter;
