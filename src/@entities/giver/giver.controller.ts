@@ -406,9 +406,17 @@ export const getProfessionalProfileforAdmin = async (
       zipcode: UserModel.zipcode,
       gender: UserModel.gender,
       avatar: UserModel.avatar,
+      caregivingTyepe: JobProfileModel.caregivingType,
+      minPrice: JobProfileModel.minPrice,
+      maxPrice: JobProfileModel.maxPrice,
+      locationRange: JobProfileModel.locationRange,
+      experienceMin: JobProfileModel.experienceMin,
+      experienceMax: JobProfileModel.experienceMax,
+      languages: JobProfileModel.languages,
     })
     .from(UserModel)
     .where(eq(UserModel.id, userId))
+    .innerJoin(JobProfileModel as any, eq(UserModel.id, JobProfileModel.userId))
     .limit(1);
 
   if (!userDetails) {
