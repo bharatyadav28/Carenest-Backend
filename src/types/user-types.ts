@@ -1,10 +1,7 @@
 import { z } from "zod";
 
-import {
-  roleEnum,
-  createUserSchema,
-  updateUserSchema,
-} from "../@entities/user/user.model";
+import { roleEnum } from "../@entities/user/user.model";
+import { createUserSchema, updateUserSchema } from "../@entities/user";
 
 export type RoleType = (typeof roleEnum.enumValues)[number];
 

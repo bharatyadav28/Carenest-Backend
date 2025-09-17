@@ -19,10 +19,15 @@ import {
   updateProfileDetails,
   updateUserAvatar,
   removeUserAvatar,
+  doesAccountExistsWithEmail,
 } from "./user.service";
 import sendEmail from "../../helpers/sendEmail";
-import { getSignupHTML } from "../../helpers/emailText";
+import {
+  getAdminCreatedAccountHTML,
+  getSignupHTML,
+} from "../../helpers/emailText";
 import { BookingModel } from "../booking/booking.model";
+import { generateRandomString } from "../../helpers/utils";
 
 export const signup = async (req: Request, res: Response) => {
   const incomingData = req.cleanBody;
@@ -489,5 +494,80 @@ export const getUserProfileforAdmin = async (req: Request, res: Response) => {
     data: {
       user: userDetails,
     },
+  });
+};
+
+export const createUserByAdmin = async (req: Request, res: Response) => {
+  const { role, ...incomingData } = req.cleanBody;
+
+  await doesAccountExistsWithEmail(incomingData.email, role);
+
+  const password = generateRandomString(8);
+  const hashedPassword = await hashPassword(password);
+
+  const usersData = {
+    ...incomingData,
+    password: hashedPassword,
+    role,
+    isEmailVerified: true,
+  };
+
+  const user = await createUser(usersData);
+
+  const emailHTML = getAdminCreatedAccountHTML(
+    user?.name,
+    user.email,
+    password,
+    role
+  );
+
+  await sendEmail({
+    to: user.email,
+    subject: "Welcome to CareWorks - Your Account Credentials",
+    html: emailHTML,
+  });
+
+  return res.status(201).json({
+    success: true,
+    message: "New careseeker created successfully",
+  });
+};
+
+export const updateUserByAdmin = async (req: Request, res: Response) => {
+  const { id: userId } = req.params;
+  const incomingData = req.cleanBody;
+
+  const currentUser = await db
+    .select()
+    .from(UserModel)
+    .where(eq(UserModel.id, userId))
+    .limit(1);
+  if (!currentUser || currentUser.length == 0) {
+    throw new NotFoundError("No user found with this id");
+  }
+
+  const isEmailUpdated =
+    incomingData?.email && incomingData?.email !== currentUser[0].email;
+
+  if (isEmailUpdated) {
+    await doesAccountExistsWithEmail(incomingData.email, currentUser[0].role);
+  }
+
+  await updateProfileDetails(userId, incomingData);
+
+  return res.status(200).json({
+    success: true,
+    message: "User details updated successfully",
+  });
+};
+
+export const deleteUserByAdmin = async (req: Request, res: Response) => {
+  const userId = req.params.id;
+
+  await deleteUser(userId);
+
+  return res.status(200).json({
+    success: true,
+    message: "Account deleted successfully",
   });
 };

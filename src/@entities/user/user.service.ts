@@ -3,7 +3,11 @@ import { eq, and } from "drizzle-orm";
 import { db } from "../../db";
 import { UserModel } from "./user.model";
 import { UpdateUserType, RoleType } from "../../types/user-types";
-import { getTokenPayload, getURLPath } from "../../helpers/utils";
+import {
+  generateRandomString,
+  getTokenPayload,
+  getURLPath,
+} from "../../helpers/utils";
 import {
   BadRequestError,
   NotFoundError,
@@ -243,5 +247,24 @@ export const updateRequiredBy = async (userId: string, requiredBy: string) => {
 
   if (updatedUser && updatedUser.length === 0) {
     throw new Error("RequiredBy updation failed");
+  }
+};
+
+export const doesAccountExistsWithEmail = async (
+  email: string,
+  type: RoleType
+) => {
+  const existingUser = await db
+    .select()
+    .from(UserModel)
+    .where(and(eq(UserModel.email, email), eq(UserModel.role, type)))
+    .limit(1);
+
+  if (existingUser && existingUser.length > 0) {
+    if (existingUser[0].isEmailVerified) {
+      throw new BadRequestError("User with this email already exists");
+    } else {
+      await db.delete(UserModel).where(eq(UserModel.id, existingUser[0].id));
+    }
   }
 };

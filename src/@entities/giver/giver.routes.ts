@@ -16,7 +16,7 @@ import {
   updateProfile,
 } from "./giver.controller";
 import { validateData } from "../../middlewares/validation";
-import { updateUserSchema } from "../user/user.model";
+import { updateUserSchema } from "../user";
 import { upload } from "../../helpers/s3";
 import { isAdmin, isGiver } from "../../middlewares/auth";
 

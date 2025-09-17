@@ -821,6 +821,8 @@ export const getBookingDetails = async (req: Request, res: Response) => {
         isDeleted: UserModel.isDeleted,
       },
       completedAt: BookingModel.completedAt,
+      requiredBy: BookingModel.requiredBy,
+      careseekerZipCode: BookingModel.careseekerZipcode,
       cancelledAt: BookingModel.cancelledAt,
       weeklySchedule: sql`(
       SELECT json_agg(json_build_object(

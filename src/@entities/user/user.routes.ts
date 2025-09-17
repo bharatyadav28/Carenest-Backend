@@ -16,13 +16,18 @@ import {
   deleteUsersAcccount,
   getAllUsersForAdmin,
   getUserProfileforAdmin,
+  createUserByAdmin,
+  updateUserByAdmin,
+  deleteUserByAdmin,
 } from "./user.controller";
 import { validateData } from "../../middlewares/validation";
 import {
+  createUserByAdminSchema,
   createUserSchema,
   signinUserSchema,
+  updateUserByAdminSchema,
   updateUserSchema,
-} from "./user.model";
+} from "./user.schema";
 import { isAdmin, isSeeker } from "../../middlewares/auth";
 import { upload } from "../../helpers/s3";
 
@@ -54,5 +59,14 @@ userRouter.route("/").delete(isSeeker, deleteUsersAcccount);
 
 userRouter.route("/all").get(isAdmin, getAllUsersForAdmin);
 userRouter.route("/all/:id").get(isAdmin, getUserProfileforAdmin);
+
+userRouter
+  .route("/manage-by-admin")
+  .post(isAdmin, validateData(createUserByAdminSchema), createUserByAdmin);
+
+userRouter
+  .route("/manage-by-admin/:id")
+  .put(isAdmin, validateData(updateUserByAdminSchema), updateUserByAdmin)
+  .delete(isAdmin, deleteUserByAdmin);
 
 export default userRouter;
