@@ -1,7 +1,7 @@
 import { pgTable, varchar } from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
 import { z } from "zod";
-import { min_timestamps } from "../../helpers/columns";
+import { min_timestamps, timestamps } from "../../helpers/columns";
 import { text } from "drizzle-orm/pg-core";
 
 export const ServiceModel = pgTable("service", {
@@ -24,7 +24,7 @@ export const ServiceModel = pgTable("service", {
 
   targetAudience: varchar("target_audience", { length: 255 }).array().notNull(),
 
-  ...min_timestamps,
+  ...timestamps,
 });
 
 export const CreateServiceSchema = z.object({
