@@ -19,6 +19,8 @@ serviceRouter
   .get(getServices)
   .post(isAdmin, validateData(CreateServiceSchema), addService);
 
+serviceRouter.route("/highlights").get(getServicesHighlight);
+
 serviceRouter
   .route("/:id")
   .get(getServiceById)
@@ -26,6 +28,5 @@ serviceRouter
   .delete(isAdmin, deleteService);
 
 serviceRouter.route("/names").get(getServicesName);
-serviceRouter.route("/highlights").get(getServicesHighlight);
 
 export default serviceRouter;
