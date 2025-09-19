@@ -19,6 +19,8 @@ import {
   createUserByAdmin,
   updateUserByAdmin,
   deleteUserByAdmin,
+  updateRequiredBy,
+  getRequiredBy,
 } from "./user.controller";
 import { validateData } from "../../middlewares/validation";
 import {
@@ -59,6 +61,11 @@ userRouter.route("/").delete(isSeeker, deleteUsersAcccount);
 
 userRouter.route("/all").get(isAdmin, getAllUsersForAdmin);
 userRouter.route("/all/:id").get(isAdmin, getUserProfileforAdmin);
+
+userRouter
+  .route("/required-by")
+  .get(isSeeker, getRequiredBy)
+  .put(isSeeker, updateRequiredBy);
 
 userRouter
   .route("/manage-by-admin")

@@ -238,16 +238,18 @@ export const updateZipCode = async (userId: string, zipcode: number) => {
   }
 };
 
-export const updateRequiredBy = async (userId: string, requiredBy: string) => {
-  const updatedUser = await db
-    .update(UserModel)
-    .set({ requiredBy: requiredBy })
-    .where(eq(UserModel.id, userId))
-    .returning();
-
-  if (updatedUser && updatedUser.length === 0) {
-    throw new Error("RequiredBy updation failed");
+export const updateRequiredByService = async (
+  userId: string,
+  requiredBy: string
+) => {
+  if (!requiredBy) {
+    throw new BadRequestError("Please provide requiredBy value");
   }
+
+  await db
+    .update(UserModel)
+    .set({ requiredBy, updatedAt: new Date() })
+    .where(eq(UserModel.id, userId));
 };
 
 export const doesAccountExistsWithEmail = async (

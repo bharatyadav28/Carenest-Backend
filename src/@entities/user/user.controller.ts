@@ -20,6 +20,7 @@ import {
   updateUserAvatar,
   removeUserAvatar,
   doesAccountExistsWithEmail,
+  updateRequiredByService,
 } from "./user.service";
 import sendEmail from "../../helpers/sendEmail";
 import {
@@ -397,6 +398,39 @@ export const removeAvatar = async (req: Request, res: Response) => {
   return res.status(200).json({
     success: true,
     message: "Profile image removed successfully",
+  });
+};
+
+export const updateRequiredBy = async (req: Request, res: Response) => {
+  const { requiredBy } = req.body;
+  const userId = req.user.id;
+
+  await updateRequiredByService(userId, requiredBy);
+
+  return res.status(200).json({
+    success: true,
+    message: "RequiredBy updated successfully",
+  });
+};
+
+export const getRequiredBy = async (req: Request, res: Response) => {
+  const userId = req.user.id;
+  const user = await db
+    .select({ requiredBy: UserModel.requiredBy })
+    .from(UserModel)
+    .where(eq(UserModel.id, userId))
+    .limit(1);
+
+  if (!user || user.length === 0) {
+    throw new NotFoundError("No user with this id exists");
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "RequiredBy fetched successfully",
+    data: {
+      requiredBy: user[0].requiredBy,
+    },
   });
 };
 

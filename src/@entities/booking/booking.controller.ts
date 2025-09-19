@@ -38,6 +38,7 @@ import {
 import { caregiverDetails } from "../giver/giver.controller";
 import { scheduleStartJob } from "../../helpers/redis-client";
 import { zip } from "lodash";
+import { updateRequiredByService } from "../user";
 
 export const bookingRequest = async (req: Request, res: Response) => {
   const {
@@ -128,6 +129,8 @@ export const bookingRequest = async (req: Request, res: Response) => {
   } catch (error) {
     throw new BadRequestError("Failed to create booking. Please try again.");
   }
+
+  await updateRequiredByService(userId, bookingData.requiredBy || "myself");
 
   return res.status(201).json({
     success: true,
