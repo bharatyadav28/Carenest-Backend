@@ -446,7 +446,11 @@ export const deleteUsersAcccount = async (req: Request, res: Response) => {
 };
 
 export const getAllUsersForAdmin = async (req: Request, res: Response) => {
-  const { search, hasDoneBooking } = req.query;
+  const { search, hasDoneBooking, page } = req.query;
+
+  const pageSize = 10;
+  const pageNumber = page ? parseInt(page as string, 10) : 1;
+  const skip = (pageNumber - 1) * pageSize;
 
   const baseConditions = [
     eq(UserModel.isDeleted, false),
@@ -476,7 +480,7 @@ export const getAllUsersForAdmin = async (req: Request, res: Response) => {
     }
   }
 
-  let users = await db
+  const usersPromise = db
     .select({
       id: UserModel.id,
       name: UserModel.name,
@@ -486,16 +490,34 @@ export const getAllUsersForAdmin = async (req: Request, res: Response) => {
       bookings: count(BookingModel.id),
     })
     .from(UserModel)
-    .orderBy(desc(UserModel.createdAt))
     .leftJoin(BookingModel, eq(UserModel.id, BookingModel.userId))
+    .where(and(...baseConditions))
     .groupBy(UserModel.id)
+    .orderBy(desc(UserModel.createdAt))
+    .limit(pageSize)
+    .offset(skip);
+
+  const totalUsersPromise = db
+    .select({
+      count: sql<number>`COUNT(*)`.as("count"),
+    })
+    .from(UserModel)
     .where(and(...baseConditions));
+
+  const [users, totalUsers] = await Promise.all([
+    usersPromise,
+    totalUsersPromise,
+  ]);
+
+  const totalCount = totalUsers.length > 0 ? Number(totalUsers[0].count) : 0;
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   return res.status(200).json({
     success: true,
     message: "Users fetched successfully",
     data: {
       users,
+      pagesCount: totalPages,
     },
   });
 };

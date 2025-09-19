@@ -338,7 +338,11 @@ export const getGiverZipCode = async (req: Request, res: Response) => {
 };
 
 export const getAllGiversForAdmin = async (req: Request, res: Response) => {
-  const { search, hasSubscription } = req.query;
+  const { search, hasSubscription, page } = req.query;
+
+  const pageSize = 2;
+  const pageNumber = page ? parseInt(page as string, 10) : 1;
+  const skip = (pageNumber - 1) * pageSize;
 
   const baseConditions = [
     eq(UserModel.isDeleted, false),
@@ -355,7 +359,7 @@ export const getAllGiversForAdmin = async (req: Request, res: Response) => {
     );
   }
 
-  let users = await db
+  let usersPromise = db
     .select({
       id: UserModel.id,
       name: UserModel.name,
@@ -379,13 +383,31 @@ export const getAllGiversForAdmin = async (req: Request, res: Response) => {
       UserModel.email,
       UserModel.mobile,
       UserModel.gender
-    );
+    )
+    .limit(pageSize)
+    .offset(skip);
+
+  let totalUsersPromise = await db
+    .select({
+      count: sql<number>`COUNT(*)`.as("count"),
+    })
+    .from(UserModel)
+    .where(and(...baseConditions));
+
+  const [users, totalUsers] = await Promise.all([
+    usersPromise,
+    totalUsersPromise,
+  ]);
+
+  const totalCount = totalUsers.length > 0 ? Number(totalUsers[0].count) : 0;
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   return res.status(200).json({
     success: true,
     message: "Users fetched successfully",
     data: {
       users,
+      totalPages,
     },
   });
 };

@@ -718,7 +718,7 @@ export const getUserRecentBookings = async (req: Request, res: Response) => {
 export const getBookingsForAdmin = async (req: Request, res: Response) => {
   const { bookedOn, startDate, endDate, status, search, page } = req.query;
 
-  const pageSize = 10; // Define the number of bookings per page
+  const pageSize = 10;
   const pageNumber = page ? parseInt(page as string, 10) : 1;
   const skip = (pageNumber - 1) * pageSize;
 
