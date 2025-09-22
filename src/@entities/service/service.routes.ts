@@ -21,12 +21,12 @@ serviceRouter
 
 serviceRouter.route("/highlights").get(getServicesHighlight);
 
+serviceRouter.route("/names").get(getServicesName);
+
 serviceRouter
   .route("/:id")
   .get(getServiceById)
   .put(isAdmin, validateData(CreateServiceSchema), updateService)
   .delete(isAdmin, deleteService);
-
-serviceRouter.route("/names").get(getServicesName);
 
 export default serviceRouter;

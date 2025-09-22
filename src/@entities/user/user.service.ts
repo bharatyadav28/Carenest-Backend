@@ -259,7 +259,13 @@ export const doesAccountExistsWithEmail = async (
   const existingUser = await db
     .select()
     .from(UserModel)
-    .where(and(eq(UserModel.email, email), eq(UserModel.role, type)))
+    .where(
+      and(
+        eq(UserModel.email, email),
+        eq(UserModel.role, type),
+        eq(UserModel.isDeleted, false)
+      )
+    )
     .limit(1);
 
   if (existingUser && existingUser.length > 0) {

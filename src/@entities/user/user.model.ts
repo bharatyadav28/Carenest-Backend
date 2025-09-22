@@ -34,7 +34,7 @@ export const UserModel = pgTable(
 
     address: text("address"),
 
-    zipcode: integer("zipcode").notNull(),
+    zipcode: integer("zipcode"),
 
     gender: varchar("gender", { length: 255 }),
 
