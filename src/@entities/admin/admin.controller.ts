@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 
 import { UserModel } from "../user/user.model";
 import { db } from "../../db";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq, sql } from "drizzle-orm";
 import { BadRequestError, NotFoundError } from "../../errors";
 import { hashPassword } from "../../helpers/passwordEncrpt";
 import { s3Uploadv4 } from "../../helpers/s3";
@@ -10,6 +10,7 @@ import { cdnURL, generateRandomString } from "../../helpers/utils";
 import { getAdminCreatedAccountHTML } from "../../helpers/emailText";
 import sendEmail from "../../helpers/sendEmail";
 import { email } from "zod";
+import { BookingModel } from "../booking/booking.model";
 
 export const getAdminProfile = async (req: Request, res: Response) => {
   const profile = await db.query.UserModel.findFirst({
@@ -77,5 +78,63 @@ export const uploadFile = async (req: Request, res: Response) => {
     success: true,
     message: "Document uploaded successfully",
     data: { url: result },
+  });
+};
+
+export const dashboardStats = async (req: Request, res: Response) => {
+  const userStatsPromise = db
+    .select({
+      totalSeekers:
+        sql<number>`COUNT(CASE WHEN ${UserModel.role} = 'user' THEN 1 END)::integer`.as(
+          "totalGivers"
+        ),
+      totalGivers:
+        sql<number>`COUNT(CASE WHEN ${UserModel.role}='giver' THEN 1 END)::integer`.as(
+          "totalGivers"
+        ),
+    })
+    .from(UserModel)
+    .where(
+      and(eq(UserModel.isDeleted, false), eq(UserModel.isEmailVerified, true))
+    );
+
+  const bookingsCountPromise = db
+    .select({
+      totalBookings: count(BookingModel.id),
+      completedBookings:
+        sql<number>`COUNT(CASE WHEN ${BookingModel.status} = 'completed' THEN 1 END)::integer`.as(
+          "completedBookings"
+        ),
+      pendingBookings:
+        sql<number>`COUNT(CASE WHEN ${BookingModel.status} = 'pending' THEN 1 END)::integer`.as(
+          "pendingBookings"
+        ),
+      acceptedBookings:
+        sql<number>`COUNT(CASE WHEN ${BookingModel.status} = 'accepted' THEN 1 END)::integer`.as(
+          "activeBookings"
+        ),
+      cancelledBookings:
+        sql<number>`COUNT(CASE WHEN ${BookingModel.status} = 'cancelled' THEN 1 END)::integer`.as(
+          "cancelledBookings"
+        ),
+    })
+    .from(BookingModel);
+
+  const [userStats, bookingsCount] = await Promise.all([
+    userStatsPromise,
+    bookingsCountPromise,
+  ]);
+
+  const stats = {
+    ...userStats[0],
+    ...bookingsCount[0],
+  };
+
+  return res.status(200).json({
+    success: true,
+    message: "Dashboard stats fetched successfully",
+    data: {
+      stats,
+    },
   });
 };

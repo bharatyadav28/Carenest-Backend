@@ -2,6 +2,7 @@ import express from "express";
 
 import { isAdmin } from "../../middlewares/auth";
 import {
+  dashboardStats,
   getAdminProfile,
   updateAdminProfile,
   uploadFile,
@@ -17,5 +18,7 @@ adminRouter
   .put(isAdmin, updateAdminProfile);
 
 adminRouter.post("/upload-file", isAdmin, upload.single("file"), uploadFile);
+
+adminRouter.get("/dashboard-stats", isAdmin, dashboardStats);
 
 export default adminRouter;
