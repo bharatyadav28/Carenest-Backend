@@ -340,7 +340,7 @@ export const getGiverZipCode = async (req: Request, res: Response) => {
 export const getAllGiversForAdmin = async (req: Request, res: Response) => {
   const { search, hasSubscription, page } = req.query;
 
-  const pageSize = 2;
+  const pageSize = 10;
   const pageNumber = page ? parseInt(page as string, 10) : 1;
   const skip = (pageNumber - 1) * pageSize;
 
@@ -428,17 +428,39 @@ export const getProfessionalProfileforAdmin = async (
       zipcode: UserModel.zipcode,
       gender: UserModel.gender,
       avatar: UserModel.avatar,
-      caregivingTyepe: JobProfileModel.caregivingType,
+      caregivingType: JobProfileModel.caregivingType,
       minPrice: JobProfileModel.minPrice,
       maxPrice: JobProfileModel.maxPrice,
       locationRange: JobProfileModel.locationRange,
       experienceMin: JobProfileModel.experienceMin,
       experienceMax: JobProfileModel.experienceMax,
       languages: JobProfileModel.languages,
+      services: sql<string[]>`array_agg(
+      ${ServiceModel.name}
+      )`.as("services"),
     })
     .from(UserModel)
     .where(eq(UserModel.id, userId))
-    .innerJoin(JobProfileModel as any, eq(UserModel.id, JobProfileModel.userId))
+    .leftJoin(JobProfileModel as any, eq(UserModel.id, JobProfileModel.userId))
+    .leftJoin(MyServiceModel, eq(UserModel.id, MyServiceModel.userId))
+    .leftJoin(ServiceModel, eq(MyServiceModel.serviceId, ServiceModel.id))
+    .groupBy(
+      UserModel.id,
+      UserModel.name,
+      UserModel.email,
+      UserModel.mobile,
+      UserModel.address,
+      UserModel.zipcode,
+      UserModel.gender,
+      UserModel.avatar,
+      JobProfileModel.caregivingType,
+      JobProfileModel.minPrice,
+      JobProfileModel.maxPrice,
+      JobProfileModel.locationRange,
+      JobProfileModel.experienceMin,
+      JobProfileModel.experienceMax,
+      JobProfileModel.languages
+    )
     .limit(1);
 
   if (!userDetails) {
