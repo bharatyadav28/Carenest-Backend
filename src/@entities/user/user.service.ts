@@ -103,7 +103,7 @@ export const getAuthUser = async (
     });
 
     if (!existingUser) {
-      throw new NotFoundError("Invalid access token");
+      throw new UnauthenticatedError("Invalid access token");
     }
 
     return existingUser;

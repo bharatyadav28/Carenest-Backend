@@ -44,23 +44,40 @@ export const getChatHistory = async (req: Request, res: Response) => {
       )
     );
 
-  const messages = await db
+  const messagesPromise = db
     .select({
       id: MessageModel.id,
       conversationId: MessageModel.conversationId,
-      fromUserId: MessageModel.fromUserId,
+      isOtherUserMessage: sql<boolean>`${MessageModel.fromUserId} != ${currentUserId}`,
       message: MessageModel.message,
       createdAt: MessageModel.createdAt,
       hasRead: MessageModel.hasRead,
     })
     .from(MessageModel)
+
     .where(eq(MessageModel.conversationId, existingConversation[0].id))
+
     .orderBy(asc(MessageModel.createdAt));
+
+  const otherUserDetailsPromise = db
+    .select({
+      id: UserModel.id,
+      name: UserModel.name,
+      avatar: UserModel.avatar,
+    })
+    .from(UserModel)
+    .where(eq(UserModel.id, otherParticipantId))
+    .limit(1);
+
+  const [messages, otherUserDetails] = await Promise.all([
+    messagesPromise,
+    otherUserDetailsPromise,
+  ]);
 
   return res.status(200).json({
     success: true,
     message: "Chat history retrieved successfully",
-    data: { messages },
+    data: { messages, otherUserDetails: otherUserDetails?.[0] },
   });
 };
 

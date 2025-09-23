@@ -50,6 +50,8 @@ export const setUpSocket = (server: HTTPServer) => {
 
         const savedMessage = await saveMessage(fromUserId, toUserId, message);
 
+        console.log("Saved message:", savedMessage);
+
         const recipientSocketId = connectedUsers.get(toUserId);
         const messageData = {
           id: savedMessage.id,
