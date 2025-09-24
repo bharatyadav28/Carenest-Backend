@@ -3,10 +3,9 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "dev": "tsc --noEmit && tsx watch src/server.ts",
-    "dev:watch": "concurrently \"tsc --noEmit --watch\" \"tsx watch src/server.ts\"",
+    "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
-    "build": "tsc",
+    "build": "node --max-old-space-size=4096 ./node_modules/.bin/tsc",
     "migrate:generate": "npx drizzle-kit generate",
     "migrate:apply": "npx drizzle-kit migrate",
     "migrate:dev": "npm run migrate:generate && npm run migrate:apply",
