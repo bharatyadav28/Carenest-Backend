@@ -1,8 +1,9 @@
 import express from "express";
 
-import { isAdmin } from "../../middlewares/auth";
+import { auth, isAdmin } from "../../middlewares/auth";
 import {
   dashboardStats,
+  getAdminId,
   getAdminProfile,
   updateAdminProfile,
   uploadFile,
@@ -20,5 +21,7 @@ adminRouter
 adminRouter.post("/upload-file", isAdmin, upload.single("file"), uploadFile);
 
 adminRouter.get("/dashboard-stats", isAdmin, dashboardStats);
+
+adminRouter.get("/get-id", auth, getAdminId);
 
 export default adminRouter;

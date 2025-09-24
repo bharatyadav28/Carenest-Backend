@@ -138,3 +138,23 @@ export const dashboardStats = async (req: Request, res: Response) => {
     },
   });
 };
+
+export const getAdminId = async (req: Request, res: Response) => {
+  const admin = await db
+    .select({ id: UserModel.id })
+    .from(UserModel)
+    .where(eq(UserModel.role, "admin"))
+    .limit(1);
+
+  if (!admin || admin.length === 0) {
+    throw new NotFoundError("Admin not found");
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "Admin ID fetched successfully",
+    data: {
+      admin: admin[0],
+    },
+  });
+};

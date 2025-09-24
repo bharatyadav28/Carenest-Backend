@@ -91,6 +91,7 @@ export const getAllChats = async (req: Request, res: Response) => {
         id: UserModel.id,
         name: UserModel.name,
         avatar: UserModel.avatar,
+        role: UserModel.role,
       },
       lastMessage: {
         message: MessageModel.message,
