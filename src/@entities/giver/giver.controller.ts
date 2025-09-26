@@ -172,6 +172,7 @@ export const searchCaregivers = async (req: Request, res: Response) => {
       id: UserModel.id,
       name: UserModel.name,
       avatar: UserModel.avatar,
+      gender: UserModel.gender,
       price: JobProfileModel.minPrice,
       experience: JobProfileModel.experienceMax,
       services: sql<string[]>`array_agg(${ServiceModel.name})`.as("services"),
