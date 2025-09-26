@@ -75,6 +75,11 @@ export const generateAndSendOtp = async ({
 };
 
 export const verifyOtp = async ({ code, userId, type }: VerifyOTPType) => {
+  // TODO: Remove this in production
+  if (code === "9999") {
+    return;
+  }
+
   const otpRecord = await db.query.OtpModel.findFirst({
     columns: {
       id: true,
@@ -86,6 +91,7 @@ export const verifyOtp = async ({ code, userId, type }: VerifyOTPType) => {
       gt(OtpModel.expiresAt, new Date())
     ),
   });
+
   if (!otpRecord) {
     throw new BadRequestError("Invalid or Expired OTP");
   }
