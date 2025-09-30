@@ -218,7 +218,7 @@ export const caregiverDetails = async (req: Request, res: Response) => {
       experience: sql<number>`COALESCE(${JobProfileModel.experienceMax}, 0)`,
       price: sql<number>`COALESCE(${JobProfileModel.minPrice}, 0)`,
       about: sql<string>`COALESCE(${AboutModel.content}, '')`,
-      location: UserModel.address,
+      location: JobProfileModel.locationRange,
       languages: JobProfileModel.languages,
     })
     .from(UserModel)
