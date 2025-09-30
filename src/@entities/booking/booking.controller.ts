@@ -1016,11 +1016,6 @@ export const updateWeeklySchedule = async (req: Request, res: Response) => {
 
 export const deleteWeeklySchedule = async (req: Request, res: Response) => {
   const { id: bookingId, wId } = req.params;
-  const { weekDay } = req.body;
-
-  if (!weekDay) {
-    throw new BadRequestError("Please provide week day.");
-  }
 
   const alreadyExistingSchedule = await db
     .delete(BookingWeeklySchedule)
