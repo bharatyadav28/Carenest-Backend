@@ -11,8 +11,15 @@ import chalk from "chalk";
 import errorMiddleware from "./middlewares/error";
 import pageNotFound from "./middlewares/pageNotFound";
 import "./helpers/redis-client";
+import { stripeWebhookHandler } from "./helpers/stripe";
 
 const app = express();
+
+app.post(
+  "/webhook",
+  express.raw({ type: "application/json" }),
+  stripeWebhookHandler
+);
 
 app.use(cors());
 app.use(express.json());
@@ -56,6 +63,7 @@ import { BookingRouter } from "./@entities/booking";
 import { messageRouter } from "./@entities/message";
 import { viewsRouter } from "./@entities/views";
 import { bookmarkRouter } from "./@entities/bookmark";
+import { orderRouter } from "./@entities/order";
 
 // app.use("/api", trimStringFields);
 
@@ -73,6 +81,7 @@ app.use("/api/v1/booking", BookingRouter);
 app.use("/api/v1/message", messageRouter);
 app.use("/api/v1/views", viewsRouter);
 app.use("/api/v1/bookmarks", bookmarkRouter);
+app.use("/api/v1/order", orderRouter);
 
 app.get("/api/v1/email-test", async (_, res: Response) => {
   try {
