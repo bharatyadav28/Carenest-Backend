@@ -113,6 +113,8 @@ export const searchCaregivers = async (req: Request, res: Response) => {
     experienceMax,
     certified,
     languages,
+    locationRange,
+    prn,
     zipcode,
   } = req.query;
 
@@ -128,6 +130,9 @@ export const searchCaregivers = async (req: Request, res: Response) => {
 
   if (gender) {
     baseConditions.push(eq(UserModel.gender, String(gender)));
+  }
+    if (locationRange) {
+    baseConditions.push(eq(JobProfileModel.locationRange, String(locationRange)));
   }
 
   if (minPrice) {
@@ -149,6 +154,9 @@ export const searchCaregivers = async (req: Request, res: Response) => {
 
   if (certified)
     baseConditions.push(eq(JobProfileModel.certified, certified === "true"));
+
+   if (prn)
+    baseConditions.push(eq(JobProfileModel.isPrn, prn === "true"));
 
   if (zipcode) {
     baseConditions.push(eq(UserModel.zipcode, Number(zipcode)));
@@ -174,6 +182,8 @@ export const searchCaregivers = async (req: Request, res: Response) => {
       avatar: UserModel.avatar,
       gender: UserModel.gender,
       price: JobProfileModel.minPrice,
+      location: JobProfileModel.locationRange,
+      prn: JobProfileModel.isPrn,
       experience: JobProfileModel.experienceMax,
       services: sql<string[]>`array_agg(${ServiceModel.name})`.as("services"),
     })
@@ -190,6 +200,8 @@ export const searchCaregivers = async (req: Request, res: Response) => {
       UserModel.name,
       UserModel.avatar,
       JobProfileModel.minPrice,
+      JobProfileModel.locationRange,
+      JobProfileModel.isPrn,
       JobProfileModel.experienceMax
     );
 
