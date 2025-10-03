@@ -19,6 +19,7 @@ import {
   gte,
   desc,
   is,
+  or,
 } from "drizzle-orm";
 import { cancelBooking } from "./booking.service";
 import { ServiceModel } from "../service/service.model";
@@ -532,7 +533,7 @@ export const getCaregiverBookings = async (req: Request, res: Response) => {
   let { status } = req.query;
 
   const baseConditions = [eq(BookingCaregiver.caregiverId, caregiverId)];
-
+const today = new Date().toISOString().split("T")[0];
   if (status) {
     status = status.toString().toLowerCase();
     if (status !== "active")
@@ -544,7 +545,10 @@ export const getCaregiverBookings = async (req: Request, res: Response) => {
         and(
           eq(BookingCaregiver.status, "hired"),
           lte(BookingModel.startDate, new Date().toISOString().split("T")[0]),
-          gte(BookingModel.endDate, new Date().toISOString().split("T")[0])
+         or(
+  gte(BookingModel.endDate, today),
+  isNull(BookingModel.endDate)
+)
         )
       );
   }
@@ -628,19 +632,26 @@ export const getUserRecentBookings = async (req: Request, res: Response) => {
   const userId = req.user.id;
   let { status } = req.query;
 
-  const baseConditions = [eq(BookingModel.userId, userId)];
-  if (status) {
-    if (status !== "active")
-      baseConditions.push(eq(BookingModel.status, status as bookingStatusType));
-    else
-      baseConditions.push(
-        and(
-          eq(BookingModel.status, "accepted"),
-          lte(BookingModel.startDate, new Date().toISOString().split("T")[0]),
-          gte(BookingModel.endDate, new Date().toISOString().split("T")[0])
+ const baseConditions = [eq(BookingModel.userId, userId)];
+const today = new Date().toISOString().split("T")[0];
+
+if (status) {
+  if (status !== "active") {
+    baseConditions.push(eq(BookingModel.status, status as bookingStatusType));
+  } else {
+    baseConditions.push(
+      and(
+        eq(BookingModel.status, "accepted"),
+        lte(BookingModel.startDate, today),
+        or(
+          gte(BookingModel.endDate, today), // endDate exists and >= today
+          isNull(BookingModel.endDate)      // or endDate is null
         )
-      );
+      )
+    );
   }
+}
+
 
   const bookings = await db
     .select({
