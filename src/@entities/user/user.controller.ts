@@ -487,6 +487,7 @@ export const getAllUsersForAdmin = async (req: Request, res: Response) => {
       email: UserModel.email,
       mobile: UserModel.mobile,
       gender: UserModel.gender,
+      zipcode: UserModel.zipcode,
       bookings: count(BookingModel.id),
     })
     .from(UserModel)

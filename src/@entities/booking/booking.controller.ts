@@ -709,6 +709,7 @@ if (status) {
 
       weeklySchedule: sql`(SELECT json_agg(
     json_build_object(
+      'id', ${BookingWeeklySchedule.id},
       'weekDay', ${BookingWeeklySchedule.weekDay},
       'startTime', ${BookingWeeklySchedule.startTime},
       'endTime', ${BookingWeeklySchedule.endTime})
@@ -936,8 +937,8 @@ export const updateBookingDetails = async (req: Request, res: Response) => {
   const { id: bookingId } = req.params;
   const { startDate, endDate, meetingDate } = req.body;
 
-  if (!startDate || !endDate || !meetingDate) {
-    throw new BadRequestError("Please provide start date, end date, and meeting date.");
+  if (!startDate  || !meetingDate) {
+    throw new BadRequestError("Please provide start date and meeting date.");
   }
   const updatedBooking = await db
     .update(BookingModel)

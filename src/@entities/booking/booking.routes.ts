@@ -30,7 +30,7 @@ BookingRouter.route("/")
 
 BookingRouter.route("/:id")
   .get(isAdmin, getBookingDetails)
-  .put(isAdmin, updateBookingDetails);
+  .put( updateBookingDetails);
 
 BookingRouter.route("/:id/assign").put(isAdmin, assignCaregiver);
 BookingRouter.route("/:id/complete").put(isAdmin, completeBooking);
@@ -44,7 +44,7 @@ BookingRouter.route("/recent/user").get(isSeeker, getUserRecentBookings);
 
 BookingRouter.route("/:id/weekly-schedule").post(isAdmin, addNewWeeklySchedule);
 BookingRouter.route("/:id/weekly-schedule/:wId")
-  .put(isAdmin, updateWeeklySchedule)
+  .put( updateWeeklySchedule)
   .delete(isAdmin, deleteWeeklySchedule);
 
 BookingRouter.route("/seeker/:id").get(isAdmin, seekerBookingsForProfile);
