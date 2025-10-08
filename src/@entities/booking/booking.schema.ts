@@ -7,6 +7,7 @@ import {
 
 export const createBookingSchema = z.object({
   startDate: z.string({ message: "required" }).trim(),
+  meetingDate: z.string().trim(),
   endDate: z.string().optional(),
   serviceIds: z.array(z.string().trim().max(21)).min(1),
   careseekerZipcode: z.number().int(),
@@ -29,6 +30,7 @@ export const createBookingSchema = z.object({
 
 export const updateBookingByGiverSchema = z.object({
   startDate: z.string().trim().optional(),
+  meetingDate: z.string().trim().optional(),
   endDate: z.string().trim().optional(),
   careseekerZipcode: z.number().int(),
   requiredBy: z.string().trim().max(255).optional(),
@@ -55,6 +57,7 @@ export const updateBookingByGiverSchema = z.object({
 
 export const updateBookingSchema = z.object({
   startDate: z.string().trim().optional(),
+  meetingDate: z.string().trim().optional(),
   endDate: z.string().trim().optional(),
   status: z.enum(bookingStatusValues).optional(),
   cancellationReason: z.string().trim().optional(),

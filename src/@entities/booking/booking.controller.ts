@@ -54,6 +54,8 @@ export const bookingRequest = async (req: Request, res: Response) => {
   const now = new Date();
   const startDate = bookingData.startDate;
   const startDateTime = new Date(startDate);
+  const meetingDate = bookingData.meetingDate;
+  const meetingDateTime = new Date(meetingDate);
 
   // Compare only dates, not time
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -62,6 +64,16 @@ export const bookingRequest = async (req: Request, res: Response) => {
     startDateTime.getMonth(),
     startDateTime.getDate()
   );
+
+  const meetingDateOnly = new Date(
+    meetingDateTime.getFullYear(),
+    meetingDateTime.getMonth(),
+    meetingDateTime.getDate()
+  );
+
+  if (meetingDateOnly < today) {
+    throw new BadRequestError("Please select a future meeting date");
+  }
 
   if (startDateOnly < today) {
     throw new BadRequestError("Please select a future date");
@@ -264,6 +276,7 @@ export const assignCaregiver = async (req: Request, res: Response) => {
 
     const jobDetails = {
       startDate: updatedbooking?.startDate || "",
+      meetingDate: updatedbooking?.meetingDate || "",
       location: updatedbooking?.careseekerZipcode.toString() || "",
       careSeekerName: userDetails?.name || "User",
     };
@@ -299,6 +312,7 @@ export const completeBooking = async (req: Request, res: Response) => {
     .select({
       status: BookingModel.status,
       startDate: BookingModel.startDate,
+      meetingDate: BookingModel.meetingDate,
       endDate: BookingModel.endDate,
       careseekerName: UserModel.name,
       careseekerEmail: UserModel.email,
@@ -310,6 +324,7 @@ export const completeBooking = async (req: Request, res: Response) => {
     Array<{
       status: string;
       startDate: string;
+      meetingDate: string;
       endDate: string;
       careseekerName: string;
       careseekerEmail: string;
@@ -385,6 +400,7 @@ export const completeBooking = async (req: Request, res: Response) => {
   if (existingBooking && assignedCaregiver) {
     const jobDetails = {
       startDate: existingBooking?.startDate || "",
+      meetingDate: existingBooking?.meetingDate || "",
       endDate: existingBooking?.endDate || "",
       careSeekerName: existingBooking?.careseekerName || null,
       paymentStatus: "pending" as const,
@@ -559,6 +575,7 @@ const today = new Date().toISOString().split("T")[0];
       status: BookingCaregiver.status,
       bookedOn: BookingModel.createdAt,
       startDate: BookingModel.startDate,
+      meetingDate: BookingModel.meetingDate,
       endDate: BookingModel.endDate,
       zipcode: BookingModel.careseekerZipcode,
       requiredBy: BookingModel.requiredBy,
@@ -615,6 +632,7 @@ const today = new Date().toISOString().split("T")[0];
       BookingCaregiver.status,
       BookingModel.createdAt,
       BookingModel.startDate,
+      BookingModel.meetingDate,
       BookingModel.endDate,
       BookingModel.careseekerZipcode,
       BookingModel.requiredBy,
@@ -658,6 +676,7 @@ if (status) {
       bookingId: BookingModel.id,
       bookedOn: BookingModel.createdAt,
       startDate: BookingModel.startDate,
+      meetingDate: BookingModel.meetingDate,
       endDate: BookingModel.endDate,
       zipcode: BookingModel.careseekerZipcode,
       requiredBy: BookingModel.requiredBy,
@@ -716,7 +735,8 @@ if (status) {
       BookingModel.endDate,
       BookingModel.careseekerZipcode,
       BookingModel.requiredBy,
-      BookingModel.status
+      BookingModel.status,
+      BookingModel.meetingDate
     );
 
   return res.status(200).json({
@@ -727,7 +747,7 @@ if (status) {
 };
 
 export const getBookingsForAdmin = async (req: Request, res: Response) => {
-  const { bookedOn, startDate, endDate, status, search, page } = req.query;
+  const { bookedOn, startDate, meetingDate, endDate, status, search, page } = req.query;
 
   const pageSize = 10;
   const pageNumber = page ? parseInt(page as string, 10) : 1;
@@ -746,6 +766,13 @@ export const getBookingsForAdmin = async (req: Request, res: Response) => {
     baseConditions.push(
       sql`DATE(${BookingModel.startDate}) = DATE(${new Date(
         startDate as string
+      )})`
+    );
+  }
+  if (meetingDate) {
+    baseConditions.push(
+      sql`DATE(${BookingModel.meetingDate}) = DATE(${new Date(
+        meetingDate as string
       )})`
     );
   }
@@ -779,6 +806,7 @@ export const getBookingsForAdmin = async (req: Request, res: Response) => {
       bookingId: BookingModel.id,
       bookedOn: BookingModel.createdAt,
       startDate: BookingModel.startDate,
+      meetingDate: BookingModel.meetingDate,
       endDate: BookingModel.endDate,
       status: BookingModel.status,
       user: {
@@ -824,6 +852,7 @@ export const getBookingDetails = async (req: Request, res: Response) => {
       bookingId: BookingModel.id,
       bookedOn: BookingModel.createdAt,
       startDate: BookingModel.startDate,
+      meetingDate: BookingModel.meetingDate,
       endDate: BookingModel.endDate,
       status: BookingModel.status,
       user: {
@@ -905,15 +934,16 @@ export const getBookingDetails = async (req: Request, res: Response) => {
 
 export const updateBookingDetails = async (req: Request, res: Response) => {
   const { id: bookingId } = req.params;
-  const { startDate, endDate } = req.body;
+  const { startDate, endDate, meetingDate } = req.body;
 
-  if (!startDate || !endDate) {
-    throw new BadRequestError("Please provide start date and end date.");
+  if (!startDate || !endDate || !meetingDate) {
+    throw new BadRequestError("Please provide start date, end date, and meeting date.");
   }
   const updatedBooking = await db
     .update(BookingModel)
     .set({
       startDate,
+      meetingDate,
       endDate,
       updatedAt: new Date(),
     })
@@ -1055,6 +1085,7 @@ export const seekerBookingsForProfile = async (req: Request, res: Response) => {
     .select({
       id: BookingModel.id,
       startDate: BookingModel.startDate,
+      meetingDate: BookingModel.meetingDate,
       status: BookingModel.status,
       bookedOn: BookingModel.createdAt,
       completedAt: BookingModel.completedAt,

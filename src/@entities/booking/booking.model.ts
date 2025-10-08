@@ -38,6 +38,8 @@ export const BookingModel = pgTable("booking", {
 
   startDate: date("start_date").notNull(),
 
+  meetingDate: date("meeting_date").notNull(),
+
   endDate: date("end_date"),
 
   careseekerZipcode: integer("zipcode").notNull(),
