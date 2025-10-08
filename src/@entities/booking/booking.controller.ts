@@ -1132,3 +1132,82 @@ export const giverBookingsForProfile = async (req: Request, res: Response) => {
     data: { bookings, bookingAnalytics },
   });
 };
+
+export const editBooking = async (req: Request, res: Response) => {
+  const { id: bookingId } = req.params;
+  const { startDate, meetingDate, endDate, weeklySchedule } = req.body;
+
+  if (!bookingId) {
+    throw new BadRequestError("Booking ID is required.");
+  }
+
+  // Validate date fields
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const startDateTime = new Date(startDate);
+  const meetingDateTime = new Date(meetingDate);
+  const startDateOnly = new Date(
+    startDateTime.getFullYear(),
+    startDateTime.getMonth(),
+    startDateTime.getDate()
+  );
+  const meetingDateOnly = new Date(
+    meetingDateTime.getFullYear(),
+    meetingDateTime.getMonth(),
+    meetingDateTime.getDate()
+  );
+
+  if (meetingDateOnly < today)
+    throw new BadRequestError("Please select a future meeting date");
+
+  if (startDateOnly < today)
+    throw new BadRequestError("Please select a future start date");
+
+  try {
+    await db.transaction(async (tx) => {
+      // 1️⃣ Check if booking exists
+      const existingBooking = await tx.query.BookingModel.findFirst({
+        where: eq(BookingModel.id, bookingId),
+      });
+
+      if (!existingBooking) {
+        throw new NotFoundError("Booking not found.");
+      }
+
+      // 2️⃣ Update booking main details
+      await tx
+        .update(BookingModel)
+        .set({
+          startDate,
+          meetingDate,
+          endDate,
+          updatedAt: new Date(),
+        })
+        .where(eq(BookingModel.id, bookingId));
+
+      // 3️⃣ Delete old weekly schedule entries for this booking
+      await tx
+        .delete(BookingWeeklySchedule)
+        .where(eq(BookingWeeklySchedule.bookingId, bookingId));
+
+      // 4️⃣ Insert new weekly schedule records
+      if (weeklySchedule && Array.isArray(weeklySchedule) && weeklySchedule.length > 0) {
+        const weeklyScheduleRecords = weeklySchedule.map((scheduleItem: any) => ({
+          ...scheduleItem,
+          bookingId,
+        }));
+
+        await tx.insert(BookingWeeklySchedule).values(weeklyScheduleRecords);
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Booking updated successfully.",
+    });
+  } catch (error) {
+    console.error("Error updating booking:", error);
+    throw new BadRequestError("Failed to update booking. Please try again.");
+  }
+};

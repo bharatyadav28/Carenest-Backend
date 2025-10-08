@@ -18,6 +18,7 @@ import {
   addNewWeeklySchedule,
   seekerBookingsForProfile,
   giverBookingsForProfile,
+  editBooking
 } from "./booking.controller";
 import { validateData } from "../../middlewares/validation";
 import { createBookingSchema } from "./booking.schema";
@@ -35,6 +36,7 @@ BookingRouter.route("/:id")
 BookingRouter.route("/:id/assign").put(isAdmin, assignCaregiver);
 BookingRouter.route("/:id/complete").put(isAdmin, completeBooking);
 
+BookingRouter.route("/:id/edit").put(isSeeker, editBooking);
 // // BookingRouter.route("/:id/cancel/giver").put(isGiver, cancelBookingByGiver);
 BookingRouter.route("/:id/cancel/user").put(isSeeker, cancelBookingByUser);
 BookingRouter.route("/:id/cancel/admin").put(isAdmin, cancelBookingByAdmin);
