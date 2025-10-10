@@ -756,36 +756,39 @@ export const getBookingsForAdmin = async (req: Request, res: Response) => {
 
   const baseConditions = [];
 
+  //  Filter by booking date
   if (bookedOn) {
     baseConditions.push(
-      sql`DATE(${BookingModel.createdAt}) = DATE(${new Date(
-        bookedOn as string
-      )})`
+      sql`DATE(${BookingModel.createdAt}) = DATE(${new Date(bookedOn as string)})`
     );
   }
+
+  // Filter by start date
   if (startDate) {
     baseConditions.push(
-      sql`DATE(${BookingModel.startDate}) = DATE(${new Date(
-        startDate as string
-      )})`
+      sql`DATE(${BookingModel.startDate}) = DATE(${new Date(startDate as string)})`
     );
   }
+
+  //  Filter by meeting date
   if (meetingDate) {
     baseConditions.push(
-      sql`DATE(${BookingModel.meetingDate}) = DATE(${new Date(
-        meetingDate as string
-      )})`
+      sql`DATE(${BookingModel.meetingDate}) = DATE(${new Date(meetingDate as string)})`
     );
   }
+
+  // Filter by end date
   if (endDate) {
     baseConditions.push(
       sql`DATE(${BookingModel.endDate}) = DATE(${new Date(endDate as string)})`
     );
   }
+
+  //  Filter by status
   if (status) {
-    if (status !== "active")
+    if (status !== "active") {
       baseConditions.push(sql`${BookingModel.status} = ${status}`);
-    else
+    } else {
       baseConditions.push(
         and(
           eq(BookingModel.status, "accepted"),
@@ -793,16 +796,18 @@ export const getBookingsForAdmin = async (req: Request, res: Response) => {
           gte(BookingModel.endDate, new Date().toISOString().split("T")[0])
         )
       );
+    }
   }
+
+  
   if (search) {
     baseConditions.push(
-      sql`(${UserModel.name} ILIKE ${`%${search}%`}) OR (${
-        UserModel.email
-      } ILIKE ${`%${search}%`})`
+      sql`(${UserModel.name} ILIKE ${`%${search}%`} OR ${UserModel.email} ILIKE ${`%${search}%`})`
     );
   }
 
-  const bookingsPromise = await db
+ 
+  const bookingsPromise = db
     .select({
       bookingId: BookingModel.id,
       bookedOn: BookingModel.createdAt,
@@ -818,18 +823,20 @@ export const getBookingsForAdmin = async (req: Request, res: Response) => {
       },
     })
     .from(BookingModel)
-    .where(and(...baseConditions))
     .innerJoin(UserModel as any, eq(BookingModel.userId, UserModel.id))
+    .where(and(...baseConditions))
+    .orderBy(sql`${BookingModel.createdAt} DESC`) //  Sort by latest booking
     .limit(pageSize)
     .offset(skip);
 
-  const totalBookingsPromise = await db
+  
+  const totalBookingsPromise = db
     .select({
       count: sql<number>`COUNT(*)`,
     })
     .from(BookingModel)
-    .where(and(...baseConditions))
-    .innerJoin(UserModel as any, eq(BookingModel.userId, UserModel.id));
+    .innerJoin(UserModel as any, eq(BookingModel.userId, UserModel.id))
+    .where(and(...baseConditions));
 
   const [bookings, totalBookings] = await Promise.all([
     bookingsPromise,
@@ -844,6 +851,7 @@ export const getBookingsForAdmin = async (req: Request, res: Response) => {
     data: { bookings, pagesCount },
   });
 };
+
 
 export const getBookingDetails = async (req: Request, res: Response) => {
   const { id: bookingId } = req.params;

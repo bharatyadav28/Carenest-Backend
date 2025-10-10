@@ -456,13 +456,15 @@ export const getAllUsersForAdmin = async (req: Request, res: Response) => {
     eq(UserModel.isDeleted, false),
     eq(UserModel.role, "user"),
   ];
+
   if (search && typeof search === "string") {
     const searchTerm = `%${search}%`;
     baseConditions.push(
       or(
         ilike(UserModel.name, searchTerm),
         ilike(UserModel.email, searchTerm),
-        ilike(UserModel.mobile, searchTerm)
+        ilike(UserModel.mobile, searchTerm),
+        sql`CAST(${UserModel.zipcode} AS TEXT) ILIKE ${searchTerm}`
       )
     );
   }
@@ -471,11 +473,11 @@ export const getAllUsersForAdmin = async (req: Request, res: Response) => {
     const hasBooking = hasDoneBooking === "true";
     if (hasBooking) {
       baseConditions.push(
-        sql`EXISTS (SELECT 1 FROM booking WHERE ${BookingModel.userId} = ${UserModel.id} )`
+        sql`EXISTS (SELECT 1 FROM booking WHERE ${BookingModel.userId} = ${UserModel.id})`
       );
     } else {
       baseConditions.push(
-        sql`NOT EXISTS (SELECT 1 FROM booking WHERE ${BookingModel.userId} = ${UserModel.id} )`
+        sql`NOT EXISTS (SELECT 1 FROM booking WHERE ${BookingModel.userId} = ${UserModel.id})`
       );
     }
   }
@@ -489,6 +491,7 @@ export const getAllUsersForAdmin = async (req: Request, res: Response) => {
       gender: UserModel.gender,
       zipcode: UserModel.zipcode,
       bookings: count(BookingModel.id),
+      activeBookings: sql<number>`COUNT(CASE WHEN ${BookingModel.status} = 'accepted' THEN 1 END)`.as("activeBookings"),
     })
     .from(UserModel)
     .leftJoin(BookingModel, eq(UserModel.id, BookingModel.userId))

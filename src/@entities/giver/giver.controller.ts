@@ -17,7 +17,7 @@ import { JobProfileModel } from "../jobProfile/jobProfile.model";
 import { db } from "../../db";
 import { ServiceModel } from "../service/service.model";
 import { MyServiceModel } from "../myService/myService.model";
-import { add, orderBy } from "lodash";
+import { add, orderBy, zip } from "lodash";
 import { AboutModel } from "../about/about.model";
 import { whyChooseMeModel } from "../whyChooseMe/whyChooseMe.model";
 import { BookingCaregiver } from "../booking";
@@ -367,10 +367,12 @@ export const getAllGiversForAdmin = async (req: Request, res: Response) => {
       or(
         ilike(UserModel.name, searchTerm),
         ilike(UserModel.email, searchTerm),
-        ilike(UserModel.mobile, searchTerm)
+        ilike(UserModel.mobile, searchTerm),
+        sql`CAST(${UserModel.zipcode} AS TEXT) ILIKE ${searchTerm}`
       )
     );
   }
+
 
   let usersPromise = db
     .select({
@@ -379,6 +381,7 @@ export const getAllGiversForAdmin = async (req: Request, res: Response) => {
       email: UserModel.email,
       mobile: UserModel.mobile,
       gender: UserModel.gender,
+      zipcode: UserModel.zipcode,
 
       totalBookingsAllocated: sql<number>`COUNT(
       CASE
@@ -395,7 +398,8 @@ export const getAllGiversForAdmin = async (req: Request, res: Response) => {
       UserModel.name,
       UserModel.email,
       UserModel.mobile,
-      UserModel.gender
+      UserModel.gender,
+      UserModel.zipcode
     )
     .limit(pageSize)
     .offset(skip);
