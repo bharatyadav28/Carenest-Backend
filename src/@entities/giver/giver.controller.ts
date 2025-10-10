@@ -385,7 +385,7 @@ export const getAllGiversForAdmin = async (req: Request, res: Response) => {
 
       totalBookingsAllocated: sql<number>`COUNT(
       CASE
-        WHEN ${BookingCaregiver.status} = 'hired' OR ${BookingCaregiver.status} = 'completed' THEN 1
+        WHEN ${BookingCaregiver.status} = 'hired'  THEN 1
       END 
       )::integer`.as("totalBookingsAllocated"),
     })
