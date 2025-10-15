@@ -30,7 +30,7 @@ BookingRouter.route("/")
   .get(isAdmin, getBookingsForAdmin);
 
 BookingRouter.route("/:id")
-  .get(isAdmin, isSeeker,getBookingDetails)
+  .get(isAdmin, getBookingDetails)
   .put( updateBookingDetails);
 
 BookingRouter.route("/:id/assign").put(isAdmin, assignCaregiver);
