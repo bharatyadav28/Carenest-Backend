@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 
-export const cdnURL = "https://dev-carenest.s3.ap-south-1.amazonaws.com";
+export const cdnURL = "https://dev-creative-story.s3.us-east-1.amazo";
 export const caregiverURL = "https://carenest-caregiver.vercel.app";
 export const careseekerURL = "https://care-nest-teal.vercel.app";
 
