@@ -64,7 +64,12 @@ import { messageRouter } from "./@entities/message";
 import { viewsRouter } from "./@entities/views";
 import { bookmarkRouter } from "./@entities/bookmark";
 import { orderRouter } from "./@entities/order";
-
+import { heroSectionRouter } from "./@entities/herosection";
+import { testimonialRouter } from "./@entities/testimonials";
+import { blogRouter } from "./@entities/blog";
+import { aboutUsRouter } from "./@entities/aboutUs";
+import { whoWeAreRouter } from "./@entities/whoWeAre";
+import { resourcesRouter } from "./@entities/resources";
 // app.use("/api", trimStringFields);
 
 app.use("/api/v1/user", userRouter);
@@ -82,6 +87,12 @@ app.use("/api/v1/message", messageRouter);
 app.use("/api/v1/views", viewsRouter);
 app.use("/api/v1/bookmarks", bookmarkRouter);
 app.use("/api/v1/order", orderRouter);
+app.use("/api/v1/hero-section", heroSectionRouter);
+app.use("/api/v1/testimonial", testimonialRouter);
+app.use("/api/v1/blog", blogRouter);
+app.use("/api/v1/about-us", aboutUsRouter);
+app.use("/api/v1/who-we-are", whoWeAreRouter);
+app.use("/api/v1/resources", resourcesRouter);
 
 app.get("/api/v1/email-test", async (_, res: Response) => {
   try {

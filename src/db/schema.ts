@@ -24,3 +24,9 @@ export {
 } from "../@entities/message/message.model";
 export { ViewsModel } from "../@entities/views/views.model";
 export { BookmarkModel } from "../@entities/bookmark/bookmark.model";
+export { HeroSectionModel } from "../@entities/herosection/heroSection.model";
+export{ TestimonialModel } from "../@entities/testimonials/testimonial.model";
+export {BlogModel} from "../@entities/blog/blog.model";
+export {AboutUsModel} from "../@entities/aboutUs/aboutUs.model";
+export {WhoWeAreModel} from "../@entities/whoWeAre/whoWeAre.model";
+export {ResourcesModel} from "../@entities/resources/resources.model";
