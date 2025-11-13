@@ -190,6 +190,34 @@
       "when": 1762757583037,
       "tag": "0026_sleepy_stingray",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1762834964961,
+      "tag": "0027_peaceful_revanche",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1762837987694,
+      "tag": "0028_chilly_gamora",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1762839046086,
+      "tag": "0029_groovy_stingray",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1762840946354,
+      "tag": "0030_lucky_tempest",
+      "breakpoints": true
     }
   ]
 }

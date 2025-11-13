@@ -30,3 +30,7 @@ export {BlogModel} from "../@entities/blog/blog.model";
 export {AboutUsModel} from "../@entities/aboutUs/aboutUs.model";
 export {WhoWeAreModel} from "../@entities/whoWeAre/whoWeAre.model";
 export {ResourcesModel} from "../@entities/resources/resources.model";
+export { PolicyModel} from "../@entities/policy/policy.model";
+export {FooterModel} from "../@entities/footer/footer.model";
+export {ContactModel} from "../@entities/contact/contact.model";
+export {InquiryModel} from "../@entities/inquiry/inquiry.model";

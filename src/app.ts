@@ -70,6 +70,10 @@ import { blogRouter } from "./@entities/blog";
 import { aboutUsRouter } from "./@entities/aboutUs";
 import { whoWeAreRouter } from "./@entities/whoWeAre";
 import { resourcesRouter } from "./@entities/resources";
+import { policyRouter } from "./@entities/policy";
+import { footerRouter } from "./@entities/footer";
+import { contactRouter } from "./@entities/contact";
+import {inquiryRouter} from "./@entities/inquiry";
 // app.use("/api", trimStringFields);
 
 app.use("/api/v1/user", userRouter);
@@ -93,6 +97,10 @@ app.use("/api/v1/blog", blogRouter);
 app.use("/api/v1/about-us", aboutUsRouter);
 app.use("/api/v1/who-we-are", whoWeAreRouter);
 app.use("/api/v1/resources", resourcesRouter);
+app.use("/api/v1/policy", policyRouter);
+app.use("/api/v1/footer", footerRouter);
+app.use("/api/v1/contact", contactRouter);
+app.use("/api/v1/inquiry", inquiryRouter);
 
 app.get("/api/v1/email-test", async (_, res: Response) => {
   try {
