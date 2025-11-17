@@ -75,6 +75,7 @@ import { footerRouter } from "./@entities/footer";
 import { contactRouter } from "./@entities/contact";
 import {inquiryRouter} from "./@entities/inquiry";
 import {serviceCmsRouter} from "./@entities/serviceCms";
+import { faqRouter } from "./@entities/faq";
 // app.use("/api", trimStringFields);
 
 app.use("/api/v1/user", userRouter);
@@ -103,6 +104,7 @@ app.use("/api/v1/footer", footerRouter);
 app.use("/api/v1/contact", contactRouter);
 app.use("/api/v1/inquiry", inquiryRouter);
 app.use("/api/v1/service-cms", serviceCmsRouter);
+app.use("/api/v1/faq", faqRouter);
 
 app.get("/api/v1/email-test", async (_, res: Response) => {
   try {

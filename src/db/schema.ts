@@ -35,3 +35,4 @@ export {FooterModel} from "../@entities/footer/footer.model";
 export {ContactModel} from "../@entities/contact/contact.model";
 export {InquiryModel} from "../@entities/inquiry/inquiry.model";
 export {ServiceCmsModel} from "../@entities/serviceCms/serviceCms.model";
+export {FAQModel} from "../@entities/faq/faq.model";

@@ -225,6 +225,13 @@
       "when": 1763101167605,
       "tag": "0031_quiet_lyja",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1763359419409,
+      "tag": "0032_wild_reavers",
+      "breakpoints": true
     }
   ]
 }
