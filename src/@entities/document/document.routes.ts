@@ -14,7 +14,7 @@ const documentRouter = express.Router();
 
 documentRouter.post(
   "/upload",
-  isGiver,isAdmin,
+  
   upload.single("file"),
   uploadGiversDocuments
 );
