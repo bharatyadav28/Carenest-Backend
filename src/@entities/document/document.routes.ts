@@ -1,5 +1,5 @@
 import express from "express";
-import { isGiver } from "../../middlewares/auth";
+import { isGiver,isAdmin } from "../../middlewares/auth";
 import { upload } from "../../helpers/s3";
 import {
   deleteCaregiverDocument,
@@ -14,7 +14,7 @@ const documentRouter = express.Router();
 
 documentRouter.post(
   "/upload",
-  isGiver,
+  isGiver,isAdmin,
   upload.single("file"),
   uploadGiversDocuments
 );
