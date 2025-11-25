@@ -10,6 +10,7 @@ const socialLinkSchema = z.object({
     .$defaultFn(() => nanoid(21)),
   platform: z.string().trim().min(1).max(50),
   url: z.string().url(),
+  icon: z.string().trim().min(1), // Add icon field
 });
 
 export const FooterModel = pgTable("footer", {
@@ -51,4 +52,5 @@ export const updateLocationSchema = z.object({
 export const socialLinkInputSchema = z.object({
   platform: z.string().trim().min(1).max(50),
   url: z.string().url(),
+  icon: z.string().trim().min(1), // Add icon field to input schema
 });
