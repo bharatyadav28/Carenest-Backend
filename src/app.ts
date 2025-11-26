@@ -79,6 +79,8 @@ import { faqRouter } from "./@entities/faq";
 import { becomeCaregiverRouter } from "./@entities/becomeCaregiver";
 import { caregiverApplicationRouter } from "./@entities/caregiverApplication";
 import { veteransHomeCareRouter } from "./@entities/veteransHomeCare";
+import { locationServicesRouter } from "./@entities/locationServices";
+
 // app.use("/api", trimStringFields);
 
 app.use("/api/v1/user", userRouter);
@@ -111,6 +113,9 @@ app.use("/api/v1/faq", faqRouter);
 app.use("/api/v1/become-caregiver", becomeCaregiverRouter);
 app.use("/api/v1/caregiver-application", caregiverApplicationRouter);
 app.use("/api/v1/veterans-home-care", veteransHomeCareRouter);
+app.use("/api/v1/location-services", locationServicesRouter);
+
+
 
 
 app.get("/api/v1/email-test", async (_, res: Response) => {

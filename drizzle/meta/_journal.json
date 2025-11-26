@@ -246,6 +246,13 @@
       "when": 1764131381129,
       "tag": "0034_cloudy_tarantula",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1764138555129,
+      "tag": "0035_confused_speed",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,22 @@
+CREATE TABLE "location_services" (
+	"id" varchar(21) PRIMARY KEY NOT NULL,
+	"city" varchar(100) NOT NULL,
+	"state" varchar(100) NOT NULL,
+	"hero_title" varchar(255) NOT NULL,
+	"hero_image" varchar(500) NOT NULL,
+	"hero_description" text NOT NULL,
+	"why_choose_title" varchar(255) NOT NULL,
+	"why_choose_description" text NOT NULL,
+	"services_intro" varchar(255) NOT NULL,
+	"services_description" text NOT NULL,
+	"services" jsonb,
+	"care_designed_title" varchar(255) NOT NULL,
+	"care_designed_description" text NOT NULL,
+	"care_designed_image" varchar(500) NOT NULL,
+	"proudly_serving_title" varchar(255) NOT NULL,
+	"proudly_serving_description" text NOT NULL,
+	"steady_partner_title" varchar(255) NOT NULL,
+	"steady_partner_description" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
