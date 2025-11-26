@@ -37,3 +37,6 @@ export {InquiryModel} from "../@entities/inquiry/inquiry.model";
 export {ServiceCmsModel} from "../@entities/serviceCms/serviceCms.model";
 export {FAQModel} from "../@entities/faq/faq.model";
 export {BecomeCaregiverModel} from "../@entities/becomeCaregiver/becomeCaregiver.model";
+export{CaregiverApplicationModel} from "../@entities/caregiverApplication/caregiverApplication.model";
+export {VeteransHomeCareModel} from "../@entities/veteransHomeCare/veteransHomeCare.model";
+

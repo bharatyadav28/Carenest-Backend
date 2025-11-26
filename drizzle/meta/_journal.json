@@ -239,6 +239,13 @@
       "when": 1764074621862,
       "tag": "0033_flaky_maddog",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1764131381129,
+      "tag": "0034_cloudy_tarantula",
+      "breakpoints": true
     }
   ]
 }
