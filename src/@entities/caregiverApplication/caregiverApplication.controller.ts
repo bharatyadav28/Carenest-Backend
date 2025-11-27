@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import { CaregiverApplicationModel, createCaregiverApplicationSchema, updateApplicationStatusSchema } from "./caregiverApplication.model";
 import { db } from "../../db";
-import { eq, desc, asc, sql, and } from "drizzle-orm";
+import { eq, desc, asc, sql, and, or, ilike } from "drizzle-orm"; // Added or and ilike imports
+
 // Public: Submit caregiver application
 export const createCaregiverApplication = async (req: Request, res: Response) => {
   try {
@@ -41,12 +42,13 @@ export const createCaregiverApplication = async (req: Request, res: Response) =>
   }
 };
 
-// Admin: Get all applications with pagination
+// Admin: Get all applications with pagination and search
 export const getAllApplications = async (req: Request, res: Response) => {
   try {
     const { 
       status, 
       is_reviewed, 
+      search, // Added search parameter
       sort_by = "createdAt", 
       order = "desc",
       page = "1",
@@ -65,6 +67,22 @@ export const getAllApplications = async (req: Request, res: Response) => {
 
     if (is_reviewed !== undefined) {
       conditions.push(eq(CaregiverApplicationModel.isReviewed, is_reviewed === "true"));
+    }
+
+    // Add search functionality
+    if (search && search !== "") {
+      const searchConditions = [
+        ilike(CaregiverApplicationModel.fullName, `%${search}%`),
+        ilike(CaregiverApplicationModel.email, `%${search}%`),
+        ilike(CaregiverApplicationModel.phoneNumber, `%${search}%`),
+      ];
+      
+      // If there are existing conditions, combine with AND, otherwise use OR for search
+      if (conditions.length > 0) {
+        conditions.push(and(...searchConditions));
+      } else {
+        conditions.push(or(...searchConditions));
+      }
     }
 
     // Sorting
