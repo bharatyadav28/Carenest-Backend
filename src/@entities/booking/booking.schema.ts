@@ -25,7 +25,7 @@ export const createBookingSchema = z.object({
         .regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/),
     })
   ),
-  shortlistedCaregiversIds: z.array(z.string().trim().max(21)).min(3),
+  shortlistedCaregiversIds: z.array(z.string().trim().max(21)).min(1),
 });
 
 export const updateBookingByGiverSchema = z.object({

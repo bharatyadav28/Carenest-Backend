@@ -131,12 +131,12 @@ export const signin = async (req: Request, res: Response) => {
     },
   });
   if (!existingUser) {
-    throw new NotFoundError("Email is incorrect");
+    throw new NotFoundError(" Email Id not registered ");
   }
 
   let isPasswordMatched = false;
 
-  if (existingUser.password) {
+  if (existingUser.password) {  
     isPasswordMatched = await comparePassword(
       candidatePassword,
       existingUser.password

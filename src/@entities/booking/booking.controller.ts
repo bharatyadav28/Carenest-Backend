@@ -578,6 +578,7 @@ const today = new Date().toISOString().split("T")[0];
       meetingDate: BookingModel.meetingDate,
       endDate: BookingModel.endDate,
       zipcode: BookingModel.careseekerZipcode,
+     
       requiredBy: BookingModel.requiredBy,
       weeklySchedule: sql`array_agg( json_build_object(
         'weekDay', ${BookingWeeklySchedule.weekDay},
