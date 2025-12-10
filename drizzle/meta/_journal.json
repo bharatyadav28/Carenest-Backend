@@ -253,6 +253,13 @@
       "when": 1764138555129,
       "tag": "0035_confused_speed",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1765386018143,
+      "tag": "0036_closed_power_man",
+      "breakpoints": true
     }
   ]
 }
