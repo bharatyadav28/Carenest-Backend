@@ -51,7 +51,7 @@ export const updateBookingByGiverSchema = z.object({
     .optional(),
   shortlistedCaregiversIds: z
     .array(z.string().trim().max(21))
-    .min(3)
+    .min(1)
     .optional(),
 });
 
