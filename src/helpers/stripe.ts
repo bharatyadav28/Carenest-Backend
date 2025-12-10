@@ -65,7 +65,7 @@ export const createCheckoutSession = async ({
 export const stripeWebhookHandler = async (req: Request, res: Response) => {
   console.log("🔔 Webhook received");
   
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const webhookSecret = process.env.STRIPE_ENDPOINT_SECRET;
   const signature = req.headers["stripe-signature"] as string;
   
   if (!signature) {
