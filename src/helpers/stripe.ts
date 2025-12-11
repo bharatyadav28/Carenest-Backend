@@ -15,7 +15,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2025-11-17.clover",
 });
 
-const frontendDomain = process.env.FRONTEND_URL || "http://localhost:3000";
+const frontendDomain ="https://carenest-caregiver.vercel.app/subscription" ;
 
 // Get or create Stripe customer
 const getOrCreateCustomer = async (userId: string, email: string) => {
