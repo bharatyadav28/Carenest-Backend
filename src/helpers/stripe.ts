@@ -193,7 +193,9 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
 
   if (exists) return;
 
-   const periodEnd = safeUnixToDate((subscription as any).current_period_end);
+  const periodEndTimestamp =
+    (subscription as any).current_period_end || subscription.items.data[0]?.current_period_end;
+  const periodEnd = safeUnixToDate(periodEndTimestamp);
   if (!periodEnd) return;
 
   await db.insert(SubscriptionModel).values({
@@ -214,7 +216,9 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const userId = subscription.metadata?.userId;
   if (!userId) return;
-  const periodEnd = safeUnixToDate((subscription as any).current_period_end);
+  const periodEndTimestamp =
+    (subscription as any).current_period_end || subscription.items.data[0]?.current_period_end;
+  const periodEnd = safeUnixToDate(periodEndTimestamp);
   if (!periodEnd) return;
 
   await db
@@ -257,6 +261,10 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
   const line = invoice.lines.data[0];
+  if (!line) {
+    console.log("❌ Invoice has no line items");
+    return;
+  }
   const subscriptionId =
     (line as any)?.parent?.subscription_item_details?.subscription;
 
@@ -269,8 +277,11 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   const userId = subscription.metadata?.userId;
   if (!userId) return;
 
-  const periodEnd = safeUnixToDate((subscription as any).current_period_end);
-  if (!periodEnd) return;
+  const periodEnd = safeUnixToDate(line.period?.end);
+  if (!periodEnd) {
+    console.log("❌ No period end found in invoice line item");
+    return;
+  }
 
   await db
     .update(SubscriptionModel)
