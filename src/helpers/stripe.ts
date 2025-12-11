@@ -193,7 +193,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
 
   if (exists) return;
 
-  const periodEnd = safeUnixToDate(subscription.current_period_end);
+   const periodEnd = safeUnixToDate((subscription as any).current_period_end);
   if (!periodEnd) return;
 
   await db.insert(SubscriptionModel).values({
@@ -214,8 +214,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const userId = subscription.metadata?.userId;
   if (!userId) return;
-
-  const periodEnd = safeUnixToDate(subscription.current_period_end);
+  const periodEnd = safeUnixToDate((subscription as any).current_period_end);
   if (!periodEnd) return;
 
   await db
@@ -270,7 +269,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   const userId = subscription.metadata?.userId;
   if (!userId) return;
 
-  const periodEnd = safeUnixToDate(subscription.current_period_end);
+  const periodEnd = safeUnixToDate((subscription as any).current_period_end);
   if (!periodEnd) return;
 
   await db
