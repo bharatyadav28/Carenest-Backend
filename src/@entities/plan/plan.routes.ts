@@ -1,14 +1,13 @@
-  import express from "express";
-  import { createCareGiverPlan, getCareGiverPlans } from "./plan.controller";
-  import { validateData } from "../../middlewares/validation";
-  import { createPlanSchema } from "./plan.model";
-  import { isGiver } from "../../middlewares/auth";
+import express from "express";
+import { createMonthlyPlan, getPlans } from "./plan.controller";
+import { isAdmin } from "../../middlewares/auth";
 
-  const planRouter = express.Router();
+const planRouter = express.Router();
 
-  planRouter
-    .route("/")
-    .post(validateData(createPlanSchema), createCareGiverPlan)
-    .get(isGiver, getCareGiverPlans);
+// Create $10 plan (admin, one time)
+planRouter.post("/create-monthly", isAdmin, createMonthlyPlan);
 
-  export default planRouter;
+// Get plans
+planRouter.get("/", getPlans);
+
+export default planRouter;

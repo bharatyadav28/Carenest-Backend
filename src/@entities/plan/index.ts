@@ -1,4 +1,4 @@
 import planRouter from "./plan.routes";
 
-export * from "./plan.service";
+export * from "./plan.model";
 export { planRouter };

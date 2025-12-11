@@ -260,6 +260,13 @@
       "when": 1765386018143,
       "tag": "0036_closed_power_man",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1765443800704,
+      "tag": "0037_magical_stepford_cuckoos",
+      "breakpoints": true
     }
   ]
 }

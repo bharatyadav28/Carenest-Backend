@@ -1,27 +1,23 @@
-import { pgTable, varchar } from "drizzle-orm/pg-core";
+import { pgTable, varchar, integer, text, boolean } from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
-import { z } from "zod";
-
 import { min_timestamps } from "../../helpers/columns";
-import { integer } from "drizzle-orm/pg-core";
 
-export const PlanModel = pgTable("plan", {
+export const PlanModel = pgTable("subscriptionplan", {
   id: varchar("id", { length: 21 })
     .primaryKey()
-    .notNull()
     .$defaultFn(() => nanoid(21)),
 
-  type: varchar("type", { length: 50 }).notNull(),
+  name: varchar("name", { length: 100 }).notNull(), // "Monthly Plan"
+  description: text("description"),
 
-  amount: integer("amount").notNull(),
+  amount: integer("amount").notNull(), // 1000 = $10.00
+  interval: varchar("interval", { length: 20 }).notNull(), // "month"
 
-  duration: integer("duration").notNull(),
+  // Stripe IDs
+  stripeProductId: varchar("stripe_product_id", { length: 255 }),
+  stripePriceId: varchar("stripe_price_id", { length: 255 }),
+
+  isActive: boolean("is_active").default(true),
 
   ...min_timestamps,
-});
-
-export const createPlanSchema = z.object({
-  type: z.string().trim().max(50),
-  amount: z.number().int().positive(),
-  duration: z.number().int().positive(),
 });

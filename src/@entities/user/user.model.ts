@@ -45,13 +45,9 @@ export const UserModel = pgTable(
     avatar: varchar("avatar", { length: 255 }),
 
     requiredBy: varchar("required_by", { length: 21 }),
-        // ADD THESE FIELDS FOR SUBSCRIPTION
-    hasSubscription: boolean("has_subscription").default(false),
-    subscriptionStartDate: timestamp("subscription_start_date"),
-    subscriptionEndDate: timestamp("subscription_end_date"),
-    subscriptionPlanId: varchar("subscription_plan_id", { length: 21 }),
     
-
+       // Only this one field
+    hasActiveSubscription: boolean("has_active_subscription").default(false),
     ...timestamps,
   },
   (table) => [

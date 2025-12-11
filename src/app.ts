@@ -16,10 +16,11 @@ import { stripeWebhookHandler } from "./helpers/stripe";
 const app = express();
 
 app.post(
-  "/webhook",
+  "/api/v1/webhook/stripe",
   express.raw({ type: "application/json" }),
   stripeWebhookHandler
 );
+
 
 
 app.use(cors());
@@ -64,7 +65,6 @@ import { BookingRouter } from "./@entities/booking";
 import { messageRouter } from "./@entities/message";
 import { viewsRouter } from "./@entities/views";
 import { bookmarkRouter } from "./@entities/bookmark";
-import { orderRouter } from "./@entities/order";
 import { heroSectionRouter } from "./@entities/herosection";
 import { testimonialRouter } from "./@entities/testimonials";
 import { blogRouter } from "./@entities/blog";
@@ -81,6 +81,7 @@ import { becomeCaregiverRouter } from "./@entities/becomeCaregiver";
 import { caregiverApplicationRouter } from "./@entities/caregiverApplication";
 import { veteransHomeCareRouter } from "./@entities/veteransHomeCare";
 import { locationServicesRouter } from "./@entities/locationServices";
+import { subscriptionRouter } from "./@entities/subscription";
 
 // app.use("/api", trimStringFields);
 
@@ -92,13 +93,11 @@ app.use("/api/v1/why-choose-me", isGiver, whyChooseMeRouter);
 app.use("/api/v1/service", serviceRouter);
 app.use("/api/v1/my-service", isGiver, myServiceRouter);
 app.use("/api/v1/document", documentRouter);
-app.use("/api/v1/plan", planRouter);
 app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/booking", BookingRouter);
 app.use("/api/v1/message", messageRouter);
 app.use("/api/v1/views", viewsRouter);
 app.use("/api/v1/bookmarks", bookmarkRouter);
-app.use("/api/v1/order", orderRouter);
 app.use("/api/v1/hero-section", heroSectionRouter);
 app.use("/api/v1/testimonial", testimonialRouter);
 app.use("/api/v1/blog", blogRouter);
@@ -115,6 +114,9 @@ app.use("/api/v1/become-caregiver", becomeCaregiverRouter);
 app.use("/api/v1/caregiver-application", caregiverApplicationRouter);
 app.use("/api/v1/veterans-home-care", veteransHomeCareRouter);
 app.use("/api/v1/location-services", locationServicesRouter);
+
+app.use("/api/v1/plans", planRouter);
+app.use("/api/v1/subscriptions", subscriptionRouter);
 
 
 
