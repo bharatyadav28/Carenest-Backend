@@ -193,7 +193,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
 
   if (exists) return;
 
-  const periodEnd = safeUnixToDate((subscription as any).current_period_end);
+  const periodEnd = safeUnixToDate(subscription.current_period_end);
   if (!periodEnd) return;
 
   await db.insert(SubscriptionModel).values({
@@ -202,7 +202,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     stripeSubscriptionId: subscription.id,
     currentPeriodEnd: periodEnd,
     status: subscription.status,
-    cancelAtPeriodEnd: (subscription as any).cancel_at_period_end || false,
+    cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
   });
 
   await db
@@ -215,7 +215,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const userId = subscription.metadata?.userId;
   if (!userId) return;
 
-  const periodEnd = safeUnixToDate((subscription as any).current_period_end);
+  const periodEnd = safeUnixToDate(subscription.current_period_end);
   if (!periodEnd) return;
 
   await db
@@ -223,7 +223,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     .set({
       status: subscription.status,
       currentPeriodEnd: periodEnd,
-      cancelAtPeriodEnd: (subscription as any).cancel_at_period_end || false,
+      cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
       updatedAt: new Date(),
     })
     .where(eq(SubscriptionModel.stripeSubscriptionId, subscription.id));
@@ -252,35 +252,60 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     .where(eq(UserModel.id, userId));
 }
 
+// --------------------------------------------------
+// FIXED for Stripe 2025 API
+// --------------------------------------------------
+
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
-  const subscriptionId = (invoice as any).subscription as string;
-  if (!subscriptionId) return;
+  const line = invoice.lines.data[0];
+  const subscriptionId =
+    (line as any)?.parent?.subscription_item_details?.subscription;
+
+  if (!subscriptionId) {
+    console.log("❌ No subscriptionId found in invoice");
+    return;
+  }
 
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
   const userId = subscription.metadata?.userId;
   if (!userId) return;
 
-  const periodEnd = safeUnixToDate((subscription as any).current_period_end);
+  const periodEnd = safeUnixToDate(subscription.current_period_end);
   if (!periodEnd) return;
 
   await db
     .update(SubscriptionModel)
-    .set({ currentPeriodEnd: periodEnd, updatedAt: new Date() })
+    .set({
+      currentPeriodEnd: periodEnd,
+      status: "active",
+      updatedAt: new Date(),
+    })
     .where(eq(SubscriptionModel.stripeSubscriptionId, subscriptionId));
 
   await db
     .update(UserModel)
     .set({ hasActiveSubscription: true })
     .where(eq(UserModel.id, userId));
+
+  console.log("✅ Invoice paid updated:", subscriptionId);
 }
 
 async function handleInvoiceFailed(invoice: Stripe.Invoice) {
-  const subscriptionId = (invoice as any).subscription as string;
-  if (!subscriptionId) return;
+  const line = invoice.lines.data[0];
+  const subscriptionId =
+    (line as any)?.parent?.subscription_item_details?.subscription;
+
+  if (!subscriptionId) {
+    console.log("❌ No subscriptionId in failed invoice");
+    return;
+  }
 
   await db
     .update(SubscriptionModel)
-    .set({ status: "past_due", updatedAt: new Date() })
+    .set({
+      status: "past_due",
+      updatedAt: new Date(),
+    })
     .where(eq(SubscriptionModel.stripeSubscriptionId, subscriptionId));
 
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
@@ -291,4 +316,6 @@ async function handleInvoiceFailed(invoice: Stripe.Invoice) {
     .update(UserModel)
     .set({ hasActiveSubscription: false })
     .where(eq(UserModel.id, userId));
+
+  console.log("❌ Invoice failed updated:", subscriptionId);
 }
