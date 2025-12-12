@@ -35,6 +35,8 @@ import {
   getCareSeekerFeedbackHTML,
   getJobAssignmentHTML,
   getJobCompletionHTML,
+  getBookingRequestConfirmationHTML,
+  getCaregiverAssignedHTML,
 } from "../../helpers/emailText";
 import { caregiverDetails } from "../giver/giver.controller";
 import { scheduleStartJob } from "../../helpers/redis-client";
@@ -144,6 +146,22 @@ export const bookingRequest = async (req: Request, res: Response) => {
   }
 
   await updateRequiredByService(userId, bookingData.requiredBy || "myself");
+
+  const user = await db.query.UserModel.findFirst({
+    where: eq(UserModel.id, userId),
+    columns: { email: true, name: true },
+  });
+
+  if (user?.email) {
+    await sendEmail({
+      to: user.email,
+      subject: "Booking Request Received - CareWorks",
+      html: getBookingRequestConfirmationHTML(user.name || "Care Seeker", {
+        startDate: bookingData.startDate,
+        meetingDate: bookingData.meetingDate,
+      }),
+    });
+  }
 
   return res.status(201).json({
     success: true,
@@ -294,6 +312,21 @@ export const assignCaregiver = async (req: Request, res: Response) => {
       await scheduleStartJob({
         id: updatedbooking.id,
         startDate: updatedbooking.startDate,
+      });
+    }
+
+    if (userDetails?.email) {
+      await sendEmail({
+        to: userDetails.email,
+        subject: "Caregiver Assigned to Your Request - CareWorks",
+        html: getCaregiverAssignedHTML(
+          userDetails.name || "Care Seeker",
+          caregiverDetails?.name || "Caregiver",
+          {
+            startDate: updatedbooking?.startDate || "",
+            meetingDate: updatedbooking?.meetingDate || "",
+          }
+        ),
       });
     }
   }
@@ -1220,3 +1253,5 @@ export const editBooking = async (req: Request, res: Response) => {
     throw new BadRequestError("Failed to update booking. Please try again.");
   }
 };
+
+

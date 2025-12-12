@@ -114,6 +114,136 @@ export const getSignupHTML = (name: string) => {
   return getCommonEmailTemplate(heading, subHeading, body);
 };
 
+export const getCareSeekerSignupHTML = (name: string) => {
+  const heading = "Welcome to CareWorks!";
+  const subHeading = "Find the perfect care for your loved ones";
+  const body = `
+    <div style="padding: 45px 40px;">
+            <p style="font-size: 20px; line-height: 1.6; color: #233D4D; margin: 0 0 15px 0; font-weight: 600;">
+                Hi ${name || "User"} 👋
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.7; color: #5a6c7d; margin: 0 0 35px 0;">
+                Your account has been successfully created! We're here to help you find compassionate and qualified caregivers for your specific needs.
+            </p>
+            
+           
+            
+        
+            
+            <div style="background-color: #f8fbff; border-radius: 8px; padding: 20px; text-align: center; margin-top: 30px;">
+                <p style="margin: 0; color: #5a6c7d; font-size: 14px;">
+                    💡 <strong>Pro Tip:</strong> Detailed job posts attract the best matched caregivers!
+                </p>
+            </div>
+        </div>
+    `;
+
+  return getCommonEmailTemplate(heading, subHeading, body);
+};
+
+export const getBookingRequestConfirmationHTML = (
+  name: string,
+  bookingDetails: {
+    startDate: string;
+    meetingDate: string;
+  }
+) => {
+  const heading = "Booking Request Received";
+  const subHeading = "We've received your request for care";
+  const body = `
+    <div style="padding: 45px 40px;">
+            <p style="font-size: 20px; line-height: 1.6; color: #233D4D; margin: 0 0 15px 0; font-weight: 600;">
+                Hi ${name || "Care Seeker"} 👋
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.7; color: #5a6c7d; margin: 0 0 35px 0;">
+                Your booking request has been successfully created! We have notified the selected caregivers.
+            </p>
+            
+            <!-- Booking Details Card -->
+            <div style="background: linear-gradient(135deg, #f8fbff 0%, #fff5e6 100%); border-left: 4px solid #F2A307; border-radius: 12px; padding: 30px; margin: 35px 0;">
+                <h3 style="color: #233D4D; margin: 0 0 25px 0; font-size: 20px; font-weight: 600;">📋 Request Details:</h3>
+                
+                <div style="margin-bottom: 20px; background: rgba(255,255,255,0.7); padding: 15px; border-radius: 8px;">
+                    <div style="margin-bottom: 12px;">
+                        <span style="color: #F2A307; font-size: 16px; margin-right: 10px;">📅</span>
+                        <strong style="color: #233D4D; font-size: 14px;">Start Date:</strong>
+                        <span style="color: #5a6c7d; font-size: 16px; margin-left: 8px;">${bookingDetails.startDate}</span>
+                    </div>
+                    
+                    <div style="margin-bottom: 0;">
+                        <span style="color: #F2A307; font-size: 16px; margin-right: 10px;">🤝</span>
+                        <strong style="color: #233D4D; font-size: 14px;">Meeting Date:</strong>
+                        <span style="color: #5a6c7d; font-size: 16px; margin-left: 8px;">${bookingDetails.meetingDate}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="background-color: #f8fbff; border-radius: 8px; padding: 20px; text-align: center; margin-top: 30px;">
+                <p style="margin: 0; color: #5a6c7d; font-size: 14px;">
+                    💡 <strong>What's Next?</strong> We will review your request and respond shortly. You can track the status in your dashboard.
+                </p>
+            </div>
+            
+        
+        </div>
+    `;
+
+  return getCommonEmailTemplate(heading, subHeading, body);
+};
+
+export const getCaregiverAssignedHTML = (
+  careSeekerName: string,
+  caregiverName: string,
+  bookingDetails: {
+    startDate: string;
+    meetingDate: string;
+  }
+) => {
+  const heading = "Caregiver Assigned!";
+  const subHeading = "Good news! A caregiver has been assigned to your request.";
+  const body = `
+    <div style="padding: 45px 40px;">
+            <p style="font-size: 20px; line-height: 1.6; color: #233D4D; margin: 0 0 15px 0; font-weight: 600;">
+                Hi ${careSeekerName || "Care Seeker"} 👋
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.7; color: #5a6c7d; margin: 0 0 35px 0;">
+                We are pleased to inform you that <strong>${caregiverName}</strong> has been assigned to your booking request.
+            </p>
+            
+            <!-- Booking Details Card -->
+            <div style="background: linear-gradient(135deg, #f8fbff 0%, #fff5e6 100%); border-left: 4px solid #F2A307; border-radius: 12px; padding: 30px; margin: 35px 0;">
+                <h3 style="color: #233D4D; margin: 0 0 25px 0; font-size: 20px; font-weight: 600;">📋 Booking Details:</h3>
+                
+                <div style="margin-bottom: 20px; background: rgba(255,255,255,0.7); padding: 15px; border-radius: 8px;">
+                     <div style="margin-bottom: 12px;">
+                        <span style="color: #F2A307; font-size: 16px; margin-right: 10px;">👤</span>
+                        <strong style="color: #233D4D; font-size: 14px;">Caregiver:</strong>
+                        <span style="color: #5a6c7d; font-size: 16px; margin-left: 8px;">${caregiverName}</span>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <span style="color: #F2A307; font-size: 16px; margin-right: 10px;">📅</span>
+                        <strong style="color: #233D4D; font-size: 14px;">Start Date:</strong>
+                        <span style="color: #5a6c7d; font-size: 16px; margin-left: 8px;">${bookingDetails.startDate}</span>
+                    </div>
+                    
+                    <div style="margin-bottom: 0;">
+                        <span style="color: #F2A307; font-size: 16px; margin-right: 10px;">🤝</span>
+                        <strong style="color: #233D4D; font-size: 14px;">Meeting Date:</strong>
+                        <span style="color: #5a6c7d; font-size: 16px; margin-left: 8px;">${bookingDetails.meetingDate}</span>
+                    </div>
+                </div>
+            </div>
+            
+         
+        </div>
+    `;
+
+  return getCommonEmailTemplate(heading, subHeading, body);
+};
+
 export const getJobAssignmentHTML = (
   caregiverName: string,
   jobDetails: {
@@ -172,18 +302,7 @@ export const getJobAssignmentHTML = (
                 </p>
             </div>
             
-            <!-- CTA Buttons -->
-            <div style="text-align: center; margin: 45px 0 35px 0;">
-                <table style="margin: 0 auto;">
-                    <tr>
-                        <td style="padding: 10px;">
-                            <a href="${caregiverURL}/bookings" style="display: inline-block; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 50px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3); border: none; cursor: pointer;">
-                              Confirm or Decline Job
-                            </a>
-                        </td>
-                    </tr>
-                </table>
-            </div>
+         
             
             <div style="background-color: #f8fbff; border-radius: 8px; padding: 20px; text-align: center; margin-top: 30px;">
                 <p style="margin: 0; color: #5a6c7d; font-size: 14px;">
@@ -707,6 +826,78 @@ export const getAdminCreatedAccountHTML = (
                 </p>
                 <p style="margin: 0; color: #5a6c7d; font-size: 12px;">
                     If you experience any issues logging in, please contact our support team.
+                </p>
+            </div>
+        </div>
+    `;
+
+  return getCommonEmailTemplate(heading, subHeading, body);
+};
+
+export const getCareSeekerServiceReminderHTML = (
+  careSeekerName?: string,
+  caregiverName?: string,
+  startDateTime?: string,
+  address?: string,
+  jobDetailsUrl?: string
+) => {
+  const heading = "Your Caregiving Service Starts Soon!";
+  const subHeading = "Service reminder notification";
+  const body = `
+    <div style="padding: 45px 40px;">
+            <p style="font-size: 20px; line-height: 1.6; color: #233D4D; margin: 0 0 15px 0; font-weight: 600;">
+                Hi ${careSeekerName || "Care Seeker"} 👋
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.7; color: #5a6c7d; margin: 0 0 35px 0;">
+                Just a quick reminder – your caregiving service with <strong>${
+                  caregiverName || "your caregiver"
+                }</strong> starts soon.
+            </p>
+            
+            <!-- Service Details Card -->
+            <div style="background: linear-gradient(135deg, #f8fbff 0%, #fff5e6 100%); border-left: 4px solid #F2A307; border-radius: 12px; padding: 30px; margin: 35px 0;">
+                <h3 style="color: #233D4D; margin: 0 0 25px 0; font-size: 20px; font-weight: 600;">📋 Service Details</h3>
+                
+                <div style="background: rgba(255,255,255,0.7); padding: 25px; border-radius: 8px;">
+                    <div style="margin-bottom: 20px;">
+                        <p style="margin: 0 0 8px 0; color: #233D4D; font-size: 16px; font-weight: 600;">
+                            👤 Caregiver:
+                        </p>
+                        <p style="margin: 0; color: #5a6c7d; font-size: 16px; line-height: 1.6;">
+                            ${caregiverName || "Caregiver name"}
+                        </p>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <p style="margin: 0 0 8px 0; color: #233D4D; font-size: 16px; font-weight: 600;">
+                            📍 Service Location:
+                        </p>
+                        <p style="margin: 0; color: #5a6c7d; font-size: 16px; line-height: 1.6;">
+                            ${address || "Your address"}
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <p style="margin: 0 0 8px 0; color: #233D4D; font-size: 16px; font-weight: 600;">
+                            📅 Date & Time:
+                        </p>
+                        <p style="margin: 0; color: #5a6c7d; font-size: 16px; line-height: 1.6;">
+                            ${startDateTime || "Start time will be provided"}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <p style="font-size: 16px; line-height: 1.7; color: #5a6c7d; margin: 35px 0;">
+                Please ensure you're prepared for the caregiver's arrival. If you have any specific instructions, please communicate them through the platform. 💙
+            </p>
+            
+            
+            
+            <div style="background-color: #f8fbff; border-radius: 8px; padding: 20px; text-align: center; margin-top: 30px;">
+                <p style="margin: 0; color: #5a6c7d; font-size: 14px;">
+                    💡 <strong>Need to make changes?</strong> Contact our support team if you need to reschedule or make adjustments.
                 </p>
             </div>
         </div>

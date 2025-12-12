@@ -36,8 +36,7 @@ const sendEmail = async ({ to, subject, html, attachments }: emailParams) => {
     },
   });
 
-  const transporter =
-    process.env.NODE_ENV === "production" ? prodTransporter : devTransporter;
+  const transporter = prodTransporter ;
 
   const mappedAttachments: Attachment[] | undefined = attachments?.map(
     (file) => ({

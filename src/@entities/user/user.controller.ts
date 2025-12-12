@@ -26,6 +26,7 @@ import sendEmail from "../../helpers/sendEmail";
 import {
   getAdminCreatedAccountHTML,
   getSignupHTML,
+  getCareSeekerSignupHTML,
 } from "../../helpers/emailText";
 import { BookingModel } from "../booking/booking.model";
 import { generateRandomString } from "../../helpers/utils";
@@ -189,6 +190,13 @@ export const verifyEmail = async (req: Request, res: Response) => {
         to: user.email,
         subject: " Welcome to CareWorks – Let’s Get Started!",
         html: getSignupHTML(user?.name || "user"),
+      });
+    } else {
+      console.log("hello");
+      await sendEmail({
+        to: user.email,
+        subject: " Welcome to CareWorks – Let’s Get Started!",
+        html: getCareSeekerSignupHTML(user?.name || "user"),
       });
     }
   }
