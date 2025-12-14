@@ -41,4 +41,5 @@ export{CaregiverApplicationModel} from "../@entities/caregiverApplication/caregi
 export {VeteransHomeCareModel} from "../@entities/veteransHomeCare/veteransHomeCare.model";
 export {LocationServicesModel} from "../@entities/locationServices/locationServices.model";
 export { SubscriptionModel } from "../@entities/subscription/subscription.model";
+export { NotificationModel } from "../@entities/notification/notification.model";
 

@@ -6,10 +6,10 @@ import { saveMessage } from "./@entities/message/message.service";
 import { db } from "./db";
 import { MessageModel } from "./db/schema";
 import { and, eq, ne } from "drizzle-orm";
-// import { saveMessage } from "./@entities/message/message.service";
 
 let io: SocketIOServer;
-const connectedUsers = new Map();
+const connectedUsers = new Map(); // For chat functionality
+const userRooms = new Set(); // For notification rooms
 
 export const setUpSocket = (server: HTTPServer) => {
   io = new SocketIOServer(server, {
@@ -36,13 +36,26 @@ export const setUpSocket = (server: HTTPServer) => {
   });
 
   io.on("connection", (socket) => {
+    console.log(`User connected: ${socket.userId}`);
+    
+    // Set up user's personal room for notifications
+    socket.join(`user_${socket.userId}`);
+    userRooms.add(`user_${socket.userId}`);
+    
+    // Handle user joining for chat
     socket.on("join", () => {
       connectedUsers.set(socket.userId, socket.id);
-
       console.log("Connected users", connectedUsers, socket.userId, socket.id);
       console.log(`User ${socket.userId} joined`);
     });
 
+    // Notification subscription
+    socket.on("subscribe_notifications", () => {
+      console.log(`User ${socket.userId} subscribed to notifications`);
+      socket.emit("notification_subscribed", { success: true });
+    });
+
+    // Chat: Send message
     socket.on("send_message", async (data: any) => {
       try {
         const { toUserId, message } = data;
@@ -79,6 +92,7 @@ export const setUpSocket = (server: HTTPServer) => {
       }
     });
 
+    // Chat: Mark messages as read
     socket.on("mark_messages_read", async (data: any) => {
       try {
         const { conversationId } = data;
@@ -104,10 +118,20 @@ export const setUpSocket = (server: HTTPServer) => {
 
     socket.on("disconnect", () => {
       connectedUsers.delete(socket.userId);
+      userRooms.delete(`user_${socket.userId}`);
+      socket.leave(`user_${socket.userId}`);
       console.log(`User ${socket.userId} disconnected`);
     });
   });
+  
   return io;
 };
 
 export const getIO = () => io;
+
+// Notification function to send notification to specific user
+export const sendNotificationToUser = (userId: string, notification: any) => {
+  if (io) {
+    io.to(`user_${userId}`).emit("new_notification", notification);
+  }
+};

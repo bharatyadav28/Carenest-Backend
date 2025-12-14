@@ -82,6 +82,10 @@ import { caregiverApplicationRouter } from "./@entities/caregiverApplication";
 import { veteransHomeCareRouter } from "./@entities/veteransHomeCare";
 import { locationServicesRouter } from "./@entities/locationServices";
 import { subscriptionRouter } from "./@entities/subscription";
+import { notificationRouter } from "./@entities/notification";
+
+
+app.use("/api/v1/notifications", notificationRouter);
 
 // app.use("/api", trimStringFields);
 

@@ -42,7 +42,7 @@ import { caregiverDetails } from "../giver/giver.controller";
 import { scheduleStartJob } from "../../helpers/redis-client";
 import { zip } from "lodash";
 import { updateRequiredByService } from "../user";
-
+import { createNotification } from "../notification/notification.service";
 export const bookingRequest = async (req: Request, res: Response) => {
   const {
     shortlistedCaregiversIds,
@@ -162,7 +162,15 @@ export const bookingRequest = async (req: Request, res: Response) => {
       }),
     });
   }
-
+  if (userId) {
+    // Send booking notification
+    await createNotification(
+      userId,
+      "Booking Created Successfully",
+      `Your booking request has been submitted. Our team will contact you soon.`,
+      "booking"
+    );
+  }
   return res.status(201).json({
     success: true,
     message: "Booking created successfully with assigned caregivers.",
@@ -515,7 +523,7 @@ export const cancelBookingByGiver = async (req: Request, res: Response) => {
 export const cancelBookingByUser = async (req: Request, res: Response) => {
   const { id: bookingId } = req.params;
   const { cancellationReason } = req.body;
-
+ const userId = req.user.id;
   const isUsersBooking = await db.query.BookingModel.findFirst({
     where: and(
       eq(BookingModel.id, bookingId),
@@ -526,6 +534,13 @@ export const cancelBookingByUser = async (req: Request, res: Response) => {
       id: true,
     },
   });
+    // Send notification to user
+  await createNotification(
+    userId,
+    "Booking Cancelled",
+    `Your booking #${bookingId.slice(0, 8)} has been cancelled.`,
+    "booking"
+  );
 
   if (!isUsersBooking) {
     throw new BadRequestError(

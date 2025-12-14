@@ -1,6 +1,6 @@
 import { query, Request, Response } from "express";
 import { eq, and, desc, or, sql, ilike, count } from "drizzle-orm";
-
+import { createNotification } from "../notification/notification.service";
 import { UserModel } from "./user.model";
 import { db } from "../../db";
 import { comparePassword, hashPassword } from "../../helpers/passwordEncrpt";
@@ -59,6 +59,8 @@ export const signup = async (req: Request, res: Response) => {
     const newUserPromise = createUser(usersData);
 
     const [_, user] = await Promise.all([deleteUserPromise, newUserPromise]);
+
+ 
 
     if (user) {
       await generateAndSendOtp({
@@ -200,6 +202,14 @@ export const verifyEmail = async (req: Request, res: Response) => {
       });
     }
   }
+
+        // Send welcome notification
+    await createNotification(
+      user.id,
+      "Welcome to CareWorks!",
+      `Hi ${user.name || "there"}, welcome to CareWorks! Your account has been created successfully.`,
+      "user"
+    );
 
   let responseData = {};
   if (type === "account_verification" || type === "two_step_auth") {
