@@ -1,6 +1,6 @@
+// socket/index.ts
 import { Server as HTTPServer } from "http";
 import { Server as SocketIOServer } from "socket.io";
-import { BadRequestError } from "./errors";
 import { verifyJWTToken } from "./helpers/jwt";
 import { saveMessage } from "./@entities/message/message.service";
 import { db } from "./db";
@@ -9,7 +9,6 @@ import { and, eq, ne } from "drizzle-orm";
 
 let io: SocketIOServer;
 const connectedUsers = new Map(); // For chat functionality
-const userRooms = new Set(); // For notification rooms
 
 export const setUpSocket = (server: HTTPServer) => {
   io = new SocketIOServer(server, {
@@ -38,21 +37,14 @@ export const setUpSocket = (server: HTTPServer) => {
   io.on("connection", (socket) => {
     console.log(`User connected: ${socket.userId}`);
     
-    // Set up user's personal room for notifications
+    // Automatically join user's personal room for notifications
+    // No subscription needed - this happens automatically
     socket.join(`user_${socket.userId}`);
-    userRooms.add(`user_${socket.userId}`);
     
     // Handle user joining for chat
     socket.on("join", () => {
       connectedUsers.set(socket.userId, socket.id);
-      console.log("Connected users", connectedUsers, socket.userId, socket.id);
-      console.log(`User ${socket.userId} joined`);
-    });
-
-    // Notification subscription
-    socket.on("subscribe_notifications", () => {
-      console.log(`User ${socket.userId} subscribed to notifications`);
-      socket.emit("notification_subscribed", { success: true });
+      console.log(`User ${socket.userId} joined chat`);
     });
 
     // Chat: Send message
@@ -84,7 +76,7 @@ export const setUpSocket = (server: HTTPServer) => {
           message: messageData,
         });
       } catch (error) {
-        console.log(":Error", error);
+        console.log("Error sending message:", error);
         socket.emit("message_error", {
           success: false,
           error: "Failed to send message",
@@ -112,13 +104,12 @@ export const setUpSocket = (server: HTTPServer) => {
             )
           );
       } catch (error) {
-        console.log(":Error", error);
+        console.log("Error marking messages as read:", error);
       }
     });
 
     socket.on("disconnect", () => {
       connectedUsers.delete(socket.userId);
-      userRooms.delete(`user_${socket.userId}`);
       socket.leave(`user_${socket.userId}`);
       console.log(`User ${socket.userId} disconnected`);
     });
