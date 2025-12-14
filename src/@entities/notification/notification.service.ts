@@ -20,6 +20,8 @@ export const createNotification = async (
     })
     .returning();
 
+    console.log('Notification created:', notification[0]?.id);
+
   // Send real-time notification via WebSocket
   const io = getIO();
   if (io && notification[0]) {

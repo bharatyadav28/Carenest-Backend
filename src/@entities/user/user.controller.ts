@@ -202,6 +202,8 @@ export const verifyEmail = async (req: Request, res: Response) => {
       });
     }
   }
+  if(user)
+  {
 
         // Send welcome notification
     await createNotification(
@@ -210,6 +212,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
       `Hi ${user.name || "there"}, welcome to CareWorks! Your account has been created successfully.`,
       "user"
     );
+  }
 
   let responseData = {};
   if (type === "account_verification" || type === "two_step_auth") {
@@ -270,6 +273,16 @@ export const googleAuth = async (req: Request, res: Response) => {
     const newUserPromise = createUser(usersData);
 
     const [_, user] = await Promise.all([deleteUserPromise, newUserPromise]);
+
+        // Send welcome notification for Google signup
+    if (user) {
+      await createNotification(
+        user.id,
+        "Welcome to CareWorks!",
+        `Hi ${user.name || "there"}, welcome to CareWorks! Your account has been created successfully via Google.`,
+        "user"
+      );
+    }
     if (user) {
       existingUser = user;
     }
