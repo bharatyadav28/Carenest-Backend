@@ -1,8 +1,10 @@
+// @entities/subscription/subscription.routes.ts
 import express from "express";
 import {
   createSubscriptionCheckoutController,
   getMySubscription,
   cancelSubscription,
+  reactivateSubscription, // Add this import
   checkSubscriptionStatus,
   getAllSubscriptions,
 } from "./subscription.controller";
@@ -14,6 +16,7 @@ const subscriptionRouter = express.Router();
 subscriptionRouter.post("/checkout", isGiver, createSubscriptionCheckoutController);
 subscriptionRouter.get("/my", isGiver, getMySubscription);
 subscriptionRouter.post("/cancel", isGiver, cancelSubscription);
+subscriptionRouter.post("/reactivate", isGiver, reactivateSubscription); // Add this line
 subscriptionRouter.get("/check", isGiver, checkSubscriptionStatus);
 
 // Admin routes

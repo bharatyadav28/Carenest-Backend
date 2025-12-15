@@ -1,3 +1,4 @@
+// helpers/stripe.ts
 import Stripe from "stripe";
 import { Request, Response } from "express";
 import { eq } from "drizzle-orm";
@@ -94,19 +95,42 @@ export const getSubscriptionStatus = async (userId: string) => {
 };
 
 // --------------------------------------------------
-// CANCEL SUBSCRIPTION
+// CANCEL/REACTIVATE FUNCTIONS
 // --------------------------------------------------
 
+// Schedule cancellation at period end (Recommended flow)
+export const scheduleSubscriptionCancellation = async (stripeSubscriptionId: string) => {
+  try {
+    return await stripe.subscriptions.update(stripeSubscriptionId, {
+      cancel_at_period_end: true, // ✅ Cancel at period end, not immediately
+    });
+  } catch (error: any) {
+    throw new Error(`Failed to schedule subscription cancellation: ${error.message}`);
+  }
+};
+
+// Reactivate subscription (remove cancellation flag)
+export const reactivateStripeSubscription = async (stripeSubscriptionId: string) => {
+  try {
+    return await stripe.subscriptions.update(stripeSubscriptionId, {
+      cancel_at_period_end: false, // ✅ Remove cancellation flag
+    });
+  } catch (error: any) {
+    throw new Error(`Failed to reactivate subscription: ${error.message}`);
+  }
+};
+
+// Immediate cancellation (Optional - not recommended)
 export const cancelStripeSubscription = async (stripeSubscriptionId: string) => {
   try {
     return await stripe.subscriptions.cancel(stripeSubscriptionId);
   } catch (error: any) {
-    throw new Error(error.message);
+    throw new Error(`Failed to cancel subscription: ${error.message}`);
   }
 };
 
 // --------------------------------------------------
-// WEBHOOK HANDLER
+// WEBHOOK HANDLER (UPDATED)
 // --------------------------------------------------
 
 export const stripeWebhookHandler = async (req: Request, res: Response) => {
@@ -187,11 +211,19 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
 
   if (!userId || !planId) return;
 
-  const exists = await db.query.SubscriptionModel.findFirst({
-    where: eq(SubscriptionModel.stripeSubscriptionId, subscription.id),
+  // Check if user already has an active subscription
+  const existingActive = await db.query.SubscriptionModel.findFirst({
+    where: (s, { and, eq, not }) => and(
+      eq(s.userId, userId),
+      eq(s.status, "active")
+    ),
   });
 
-  if (exists) return;
+  // If user has active subscription, don't create new one
+  if (existingActive) {
+    console.log(`User ${userId} already has active subscription, skipping duplicate`);
+    return;
+  }
 
   const periodEndTimestamp =
     (subscription as any).current_period_end || subscription.items.data[0]?.current_period_end;
@@ -216,11 +248,13 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const userId = subscription.metadata?.userId;
   if (!userId) return;
+  
   const periodEndTimestamp =
     (subscription as any).current_period_end || subscription.items.data[0]?.current_period_end;
   const periodEnd = safeUnixToDate(periodEndTimestamp);
   if (!periodEnd) return;
 
+  // Update subscription record
   await db
     .update(SubscriptionModel)
     .set({
@@ -231,10 +265,26 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     })
     .where(eq(SubscriptionModel.stripeSubscriptionId, subscription.id));
 
-  await db
-    .update(UserModel)
-    .set({ hasActiveSubscription: subscription.status === "active" })
-    .where(eq(UserModel.id, userId));
+  // Update user access based on subscription status
+  if (subscription.status === "active") {
+    // User has active subscription (even if cancel_at_period_end is true)
+    await db
+      .update(UserModel)
+      .set({ hasActiveSubscription: true })
+      .where(eq(UserModel.id, userId));
+  } else if (subscription.status === "canceled") {
+    // Subscription is fully canceled
+    await db
+      .update(UserModel)
+      .set({ hasActiveSubscription: false })
+      .where(eq(UserModel.id, userId));
+  } else if (subscription.status === "past_due") {
+    // Past due - restrict access
+    await db
+      .update(UserModel)
+      .set({ hasActiveSubscription: false })
+      .where(eq(UserModel.id, userId));
+  }
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
