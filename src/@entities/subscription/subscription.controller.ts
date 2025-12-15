@@ -1,4 +1,3 @@
-// @entities/subscription/subscription.controller.ts
 import { Request, Response } from "express";
 import { eq } from "drizzle-orm";
 import { db } from "../../db";
@@ -19,19 +18,17 @@ export const createSubscriptionCheckoutController = async (req: Request, res: Re
 
   try {
     // Check if user has an ACTIVE subscription (not cancelled or past_due)
-    const existingActive = await db.query.SubscriptionModel.findFirst({
-      where: (s, { and, eq }) => and(
-        eq(s.userId, userId),
-        eq(s.status, "active")
-      ),
+    const existingSubscription = await db.query.SubscriptionModel.findFirst({
+      where: eq(SubscriptionModel.userId, userId),
     });
 
-    if (existingActive) {
+    // Only block if user has an ACTIVE subscription
+    if (existingSubscription?.status === "active") {
       throw new BadRequestError("You already have an active subscription");
     }
 
-    // If user has a CANCELED subscription, they can create a new one
-    // The checkout will create a NEW Stripe subscription with NEW ID
+    // If user has a CANCELED or PAST_DUE subscription, allow checkout
+    // The webhook will UPDATE the existing record
 
     // Create checkout
     const checkoutUrl = await createSubscriptionCheckout(userId);

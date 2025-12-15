@@ -1,4 +1,3 @@
-// helpers/stripe.ts
 import Stripe from "stripe";
 import { Request, Response } from "express";
 import { eq } from "drizzle-orm";
@@ -15,7 +14,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2025-11-17.clover",
 });
 
-const frontendDomain = "https://carenest-caregiver.vercel.app/subscription";
+const frontendDomain = "https://carenest-caregiver.vercel.app";
 
 // --------------------------------------------------
 // HELPERS
@@ -189,11 +188,30 @@ export const stripeWebhookHandler = async (req: Request, res: Response) => {
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const userId = session.metadata?.userId;
   const planId = session.metadata?.planId;
-  if (!userId || !planId) return;
+  if (!userId || !planId) {
+    console.error("Missing userId or planId in session metadata");
+    return;
+  }
 
-  if (!session.subscription) return;
+  if (!session.subscription) {
+    console.error("No subscription in checkout session");
+    return;
+  }
 
+  // Retrieve the subscription to ensure metadata is passed
   const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
+  
+  // Ensure metadata is set on the subscription
+  if (!subscription.metadata?.userId) {
+    await stripe.subscriptions.update(subscription.id, {
+      metadata: {
+        userId: userId,
+        planId: planId,
+        ...subscription.metadata // Keep existing metadata
+      }
+    });
+  }
+  
   await handleSubscriptionCreated(subscription);
 }
 
@@ -211,37 +229,51 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
 
   if (!userId || !planId) return;
 
-  // Check if user already has an active subscription
-  const existingActive = await db.query.SubscriptionModel.findFirst({
-    where: (s, { and, eq, not }) => and(
-      eq(s.userId, userId),
-      eq(s.status, "active")
-    ),
-  });
-
-  // If user has active subscription, don't create new one
-  if (existingActive) {
-    console.log(`User ${userId} already has active subscription, skipping duplicate`);
-    return;
-  }
-
   const periodEndTimestamp =
     (subscription as any).current_period_end || subscription.items.data[0]?.current_period_end;
   const periodEnd = safeUnixToDate(periodEndTimestamp);
   if (!periodEnd) return;
 
-  await db.insert(SubscriptionModel).values({
-    userId,
-    planId,
-    stripeSubscriptionId: subscription.id,
-    currentPeriodEnd: periodEnd,
-    status: subscription.status,
-    cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
+  // Check if user already has ANY subscription (active or canceled)
+  const existingSubscription = await db.query.SubscriptionModel.findFirst({
+    where: eq(SubscriptionModel.userId, userId),
   });
 
+  if (existingSubscription) {
+    // UPDATE existing subscription instead of creating new one
+    await db
+      .update(SubscriptionModel)
+      .set({
+        stripeSubscriptionId: subscription.id,
+        planId: planId,
+        currentPeriodEnd: periodEnd,
+        status: subscription.status,
+        cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
+        updatedAt: new Date(),
+      })
+      .where(eq(SubscriptionModel.userId, userId));
+    
+    console.log(`Updated existing subscription for user ${userId} with new Stripe ID: ${subscription.id}`);
+  } else {
+    // Create new subscription only if none exists
+    await db.insert(SubscriptionModel).values({
+      userId,
+      planId,
+      stripeSubscriptionId: subscription.id,
+      currentPeriodEnd: periodEnd,
+      status: subscription.status,
+      cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
+    });
+    
+    console.log(`Created new subscription for user ${userId} with Stripe ID: ${subscription.id}`);
+  }
+
+  // Always update user's subscription status
   await db
     .update(UserModel)
-    .set({ hasActiveSubscription: subscription.status === "active" })
+    .set({ 
+      hasActiveSubscription: subscription.status === "active" 
+    })
     .where(eq(UserModel.id, userId));
 }
 
@@ -254,16 +286,44 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const periodEnd = safeUnixToDate(periodEndTimestamp);
   if (!periodEnd) return;
 
-  // Update subscription record
-  await db
-    .update(SubscriptionModel)
-    .set({
-      status: subscription.status,
-      currentPeriodEnd: periodEnd,
-      cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
-      updatedAt: new Date(),
-    })
-    .where(eq(SubscriptionModel.stripeSubscriptionId, subscription.id));
+  // First, try to find subscription by stripeSubscriptionId
+  let existingSub = await db.query.SubscriptionModel.findFirst({
+    where: eq(SubscriptionModel.stripeSubscriptionId, subscription.id),
+  });
+
+  // If not found by stripeSubscriptionId, find by userId
+  if (!existingSub) {
+    existingSub = await db.query.SubscriptionModel.findFirst({
+      where: eq(SubscriptionModel.userId, userId),
+    });
+  }
+
+  if (existingSub) {
+    // Update the existing subscription
+    await db
+      .update(SubscriptionModel)
+      .set({
+        stripeSubscriptionId: subscription.id, // Update stripe ID if it changed
+        status: subscription.status,
+        currentPeriodEnd: periodEnd,
+        cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
+        updatedAt: new Date(),
+      })
+      .where(eq(SubscriptionModel.id, existingSub.id));
+  } else {
+    // Create new subscription if none exists (should rarely happen)
+    const planId = subscription.metadata?.planId;
+    if (planId) {
+      await db.insert(SubscriptionModel).values({
+        userId,
+        planId,
+        stripeSubscriptionId: subscription.id,
+        currentPeriodEnd: periodEnd,
+        status: subscription.status,
+        cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
+      });
+    }
+  }
 
   // Update user access based on subscription status
   if (subscription.status === "active") {
@@ -291,13 +351,26 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   const userId = subscription.metadata?.userId;
   if (!userId) return;
 
-  await db
-    .update(SubscriptionModel)
-    .set({
-      status: "canceled",
-      updatedAt: new Date(),
-    })
-    .where(eq(SubscriptionModel.stripeSubscriptionId, subscription.id));
+  // Find subscription by stripe ID or user ID
+  let existingSub = await db.query.SubscriptionModel.findFirst({
+    where: eq(SubscriptionModel.stripeSubscriptionId, subscription.id),
+  });
+
+  if (!existingSub) {
+    existingSub = await db.query.SubscriptionModel.findFirst({
+      where: eq(SubscriptionModel.userId, userId),
+    });
+  }
+
+  if (existingSub) {
+    await db
+      .update(SubscriptionModel)
+      .set({
+        status: "canceled",
+        updatedAt: new Date(),
+      })
+      .where(eq(SubscriptionModel.id, existingSub.id));
+  }
 
   await db
     .update(UserModel)
@@ -333,14 +406,41 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
     return;
   }
 
-  await db
-    .update(SubscriptionModel)
-    .set({
-      currentPeriodEnd: periodEnd,
-      status: "active",
-      updatedAt: new Date(),
-    })
-    .where(eq(SubscriptionModel.stripeSubscriptionId, subscriptionId));
+  // Find subscription by stripe ID or user ID
+  let existingSub = await db.query.SubscriptionModel.findFirst({
+    where: eq(SubscriptionModel.stripeSubscriptionId, subscriptionId),
+  });
+
+  if (!existingSub) {
+    existingSub = await db.query.SubscriptionModel.findFirst({
+      where: eq(SubscriptionModel.userId, userId),
+    });
+  }
+
+  if (existingSub) {
+    await db
+      .update(SubscriptionModel)
+      .set({
+        stripeSubscriptionId: subscriptionId,
+        currentPeriodEnd: periodEnd,
+        status: "active",
+        updatedAt: new Date(),
+      })
+      .where(eq(SubscriptionModel.id, existingSub.id));
+  } else {
+    // Create new if doesn't exist
+    const planId = subscription.metadata?.planId;
+    if (planId) {
+      await db.insert(SubscriptionModel).values({
+        userId,
+        planId,
+        stripeSubscriptionId: subscriptionId,
+        currentPeriodEnd: periodEnd,
+        status: "active",
+        cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
+      });
+    }
+  }
 
   await db
     .update(UserModel)
@@ -360,13 +460,20 @@ async function handleInvoiceFailed(invoice: Stripe.Invoice) {
     return;
   }
 
-  await db
-    .update(SubscriptionModel)
-    .set({
-      status: "past_due",
-      updatedAt: new Date(),
-    })
-    .where(eq(SubscriptionModel.stripeSubscriptionId, subscriptionId));
+  // Find subscription by stripe ID
+  let existingSub = await db.query.SubscriptionModel.findFirst({
+    where: eq(SubscriptionModel.stripeSubscriptionId, subscriptionId),
+  });
+
+  if (existingSub) {
+    await db
+      .update(SubscriptionModel)
+      .set({
+        status: "past_due",
+        updatedAt: new Date(),
+      })
+      .where(eq(SubscriptionModel.id, existingSub.id));
+  }
 
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
   const userId = subscription.metadata?.userId;
