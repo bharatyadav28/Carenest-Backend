@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { count, desc, ilike, lte, or, sql } from "drizzle-orm";
 import { and, eq, gte } from "drizzle-orm";
-
+import { BookmarkModel } from "../bookmark/bookmark.model";
 import { BadRequestError, NotFoundError } from "../../errors";
 import {
   deleteUser,
@@ -117,6 +117,8 @@ export const searchCaregivers = async (req: Request, res: Response) => {
     prn,
     zipcode,
   } = req.query;
+  
+  const userId = req.user?.id; // Get user ID if authenticated
 
   // Filter conditions for searching caregivers
   const baseConditions = [
@@ -131,7 +133,8 @@ export const searchCaregivers = async (req: Request, res: Response) => {
   if (gender) {
     baseConditions.push(eq(UserModel.gender, String(gender)));
   }
-    if (locationRange) {
+
+  if (locationRange) {
     baseConditions.push(eq(JobProfileModel.locationRange, String(locationRange)));
   }
 
@@ -155,7 +158,7 @@ export const searchCaregivers = async (req: Request, res: Response) => {
   if (certified)
     baseConditions.push(eq(JobProfileModel.certified, certified === "true"));
 
-   if (prn)
+  if (prn)
     baseConditions.push(eq(JobProfileModel.isPrn, prn === "true"));
 
   if (zipcode) {
@@ -175,13 +178,14 @@ export const searchCaregivers = async (req: Request, res: Response) => {
     );
   }
 
+  // First get the caregivers
   const caregivers = await db
     .select({
       id: UserModel.id,
       name: UserModel.name,
       avatar: UserModel.avatar,
       gender: UserModel.gender,
-      verified:UserModel.hasActiveSubscription,
+      verified: UserModel.hasActiveSubscription,
       price: JobProfileModel.minPrice,
       location: JobProfileModel.locationRange,
       prn: JobProfileModel.isPrn,
@@ -206,17 +210,45 @@ export const searchCaregivers = async (req: Request, res: Response) => {
       JobProfileModel.experienceMax
     );
 
+  // If user is authenticated, check bookmarks for each caregiver
+  let caregiversWithBookmark = caregivers;
+  
+  if (userId) {
+    // Get all bookmarks for this user
+    const bookmarks = await db
+      .select({
+        giverId: BookmarkModel.giverId,
+      })
+      .from(BookmarkModel)
+      .where(eq(BookmarkModel.userId, userId));
+
+    const bookmarkedGiverIds = new Set(bookmarks.map(b => b.giverId));
+
+    // Add isBookmarked field to each caregiver
+    caregiversWithBookmark = caregivers.map(caregiver => ({
+      ...caregiver,
+      isBookmarked: bookmarkedGiverIds.has(caregiver.id)
+    }));
+  } else {
+    // If user is not authenticated, set isBookmarked to false for all
+    caregiversWithBookmark = caregivers.map(caregiver => ({
+      ...caregiver,
+      isBookmarked: false
+    }));
+  }
+
   return res.status(200).json({
     success: true,
     message: "Caregivers fetched successfully",
     data: {
-      caregivers,
+      caregivers: caregiversWithBookmark,
     },
   });
 };
 
 export const caregiverDetails = async (req: Request, res: Response) => {
   const caregiverId = req.params.id;
+  const userId = req.user?.id; // Get user ID if authenticated
 
   // Get user basic details with job profile and about
   const userDetailsPromise = db
@@ -226,7 +258,7 @@ export const caregiverDetails = async (req: Request, res: Response) => {
       name: UserModel.name,
       email: UserModel.email,
       mobile: UserModel.mobile,
-       verified:UserModel.hasActiveSubscription,
+      verified: UserModel.hasActiveSubscription,
       address: UserModel.address,
       gender: UserModel.gender,
       experience: sql<number>`COALESCE(${JobProfileModel.experienceMax}, 0)`,
@@ -253,6 +285,22 @@ export const caregiverDetails = async (req: Request, res: Response) => {
     )
     .where(eq(MyServiceModel.userId, caregiverId));
 
+  // Check if bookmarked (if user is authenticated)
+  let isBookmarked = false;
+  if (userId) {
+    const bookmark = await db
+      .select()
+      .from(BookmarkModel)
+      .where(
+        and(
+          eq(BookmarkModel.userId, userId),
+          eq(BookmarkModel.giverId, caregiverId)
+        )
+      )
+      .limit(1);
+    isBookmarked = bookmark.length > 0;
+  }
+
   const [userDetails, services] = await Promise.all([
     userDetailsPromise,
     servicesPromise,
@@ -265,6 +313,7 @@ export const caregiverDetails = async (req: Request, res: Response) => {
   const details = {
     ...userDetails[0],
     services: services.map((s) => s.name),
+    isBookmarked: isBookmarked
   };
 
   return res.status(200).json({

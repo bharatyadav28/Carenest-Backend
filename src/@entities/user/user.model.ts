@@ -1,5 +1,4 @@
 import { sql } from "drizzle-orm";
-
 import {
   pgTable,
   varchar,
@@ -10,7 +9,6 @@ import {
   check,
   integer,
 } from "drizzle-orm/pg-core";
-
 import { nanoid } from "nanoid";
 import { timestamps } from "../../helpers/columns";
 
@@ -36,6 +34,8 @@ export const UserModel = pgTable(
 
     address: text("address"),
 
+    city: varchar("city", { length: 100 }), // New field
+
     zipcode: integer("zipcode"),
 
     gender: varchar("gender", { length: 255 }),
@@ -46,7 +46,6 @@ export const UserModel = pgTable(
 
     requiredBy: varchar("required_by", { length: 21 }),
     
-       // Only this one field
     hasActiveSubscription: boolean("has_active_subscription").default(false),
     ...timestamps,
   },

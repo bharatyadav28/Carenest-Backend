@@ -7,6 +7,7 @@ export const createUserSchema = z.object({
   password: z.string().trim().min(6).max(255).optional(),
   mobile: z.string().trim().max(15).optional(),
   address: z.string().trim().optional(),
+  city: z.string().trim().max(100).optional(), // New field
   gender: z.string().trim().max(255).optional(),
   role: z.enum(["user", "giver", "admin"]).default("user"),
   avatar: z.string().trim().max(255).optional(),
@@ -17,6 +18,7 @@ export const updateUserSchema = z.object({
   name: z.string().trim().max(255).optional(),
   gender: z.string().trim().max(255).optional(),
   address: z.string().trim().optional(),
+  city: z.string().trim().max(100).optional(), // New field
   mobile: z.string().trim().max(15).optional(),
   zipcode: z.number().int().optional(),
 });
@@ -26,6 +28,7 @@ export const createUserByAdminSchema = z.object({
   email: z.email().max(255),
   mobile: z.string().max(15).optional(),
   address: z.string().optional(),
+  city: z.string().max(100).optional(), // New field
   zipcode: z.number().int(),
   gender: z.string().max(255).optional(),
   role: z.enum(["user", "giver"]).default("user"),
@@ -36,6 +39,7 @@ export const updateUserByAdminSchema = z.object({
   email: z.email().max(255),
   mobile: z.string().max(15).optional(),
   address: z.string().optional(),
+  city: z.string().max(100).optional(), // New field
   zipcode: z.number().int(),
   gender: z.string().max(255).optional(),
 });

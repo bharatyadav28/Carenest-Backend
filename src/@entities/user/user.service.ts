@@ -164,6 +164,7 @@ export const fetchProfileDetails = async (userId: string) => {
       name: true,
       email: true,
       address: true,
+       city: true, // New field
       mobile: true,
       avatar: true,
       gender: true,

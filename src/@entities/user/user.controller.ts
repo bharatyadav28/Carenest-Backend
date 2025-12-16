@@ -60,8 +60,6 @@ export const signup = async (req: Request, res: Response) => {
 
     const [_, user] = await Promise.all([deleteUserPromise, newUserPromise]);
 
- 
-
     if (user) {
       await generateAndSendOtp({
         userId: user.id,
@@ -190,22 +188,21 @@ export const verifyEmail = async (req: Request, res: Response) => {
     if (user.role === "giver") {
       await sendEmail({
         to: user.email,
-        subject: " Welcome to CareWorks – Let’s Get Started!",
+        subject: " Welcome to CareWorks – Let's Get Started!",
         html: getSignupHTML(user?.name || "user"),
       });
     } else {
       console.log("hello");
       await sendEmail({
         to: user.email,
-        subject: " Welcome to CareWorks – Let’s Get Started!",
+        subject: " Welcome to CareWorks – Let's Get Started!",
         html: getCareSeekerSignupHTML(user?.name || "user"),
       });
     }
   }
   if(user)
   {
-
-        // Send welcome notification
+    // Send welcome notification
     await createNotification(
       user.id,
       "Welcome to CareWorks!",
@@ -255,6 +252,7 @@ export const googleAuth = async (req: Request, res: Response) => {
     email,
     isEmailVerified: true,
     role: userRole,
+    city: null, // Google doesn't provide city, set as null
   };
 
   if (!email || !email_verified) {
@@ -274,7 +272,7 @@ export const googleAuth = async (req: Request, res: Response) => {
 
     const [_, user] = await Promise.all([deleteUserPromise, newUserPromise]);
 
-        // Send welcome notification for Google signup
+    // Send welcome notification for Google signup
     if (user) {
       await createNotification(
         user.id,
@@ -495,6 +493,7 @@ export const getAllUsersForAdmin = async (req: Request, res: Response) => {
         ilike(UserModel.name, searchTerm),
         ilike(UserModel.email, searchTerm),
         ilike(UserModel.mobile, searchTerm),
+        ilike(UserModel.city, searchTerm), // Added city to search
         sql`CAST(${UserModel.zipcode} AS TEXT) ILIKE ${searchTerm}`
       )
     );
@@ -520,6 +519,7 @@ export const getAllUsersForAdmin = async (req: Request, res: Response) => {
       email: UserModel.email,
       mobile: UserModel.mobile,
       gender: UserModel.gender,
+      city: UserModel.city, // Added city field
       zipcode: UserModel.zipcode,
       bookings: count(BookingModel.id),
       activeBookings: sql<number>`COUNT(CASE WHEN ${BookingModel.status} = 'accepted' THEN 1 END)`.as("activeBookings"),
@@ -567,6 +567,7 @@ export const getUserProfileforAdmin = async (req: Request, res: Response) => {
       email: UserModel.email,
       mobile: UserModel.mobile,
       address: UserModel.address,
+      city: UserModel.city, // Added city field
       zipcode: UserModel.zipcode,
       gender: UserModel.gender,
       avatar: UserModel.avatar,
@@ -575,7 +576,7 @@ export const getUserProfileforAdmin = async (req: Request, res: Response) => {
     .where(eq(UserModel.id, userId))
     .limit(1);
 
-  if (!userDetails) {
+  if (!userDetails || userDetails.length === 0) {
     throw new NotFoundError("User not found");
   }
 
@@ -583,7 +584,7 @@ export const getUserProfileforAdmin = async (req: Request, res: Response) => {
     success: true,
     message: "User details fetched successfully",
     data: {
-      user: userDetails,
+      user: userDetails[0],
     },
   });
 };
