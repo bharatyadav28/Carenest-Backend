@@ -18,7 +18,7 @@ import {
 import { validateData } from "../../middlewares/validation";
 import { updateUserSchema } from "../user";
 import { upload } from "../../helpers/s3";
-import { isAdmin, isGiver } from "../../middlewares/auth";
+import { isAdmin, isGiver,optionalAuth } from "../../middlewares/auth";
 
 const giverRouter = express.Router();
 
@@ -38,8 +38,8 @@ giverRouter
 
 giverRouter.route("/").delete(isGiver, deleteGiversAcccount);
 
-giverRouter.route("/search").get(searchCaregivers);
-giverRouter.route("/search/:id").get(caregiverDetails);
+giverRouter.route("/search").get(optionalAuth,searchCaregivers);
+giverRouter.route("/search/:id").get(optionalAuth,caregiverDetails);
 
 giverRouter
   .route("/zipcode")

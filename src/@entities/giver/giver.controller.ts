@@ -120,6 +120,8 @@ export const searchCaregivers = async (req: Request, res: Response) => {
   
   const userId = req.user?.id; // Get user ID if authenticated
 
+  console.log("user",userId);
+
   // Filter conditions for searching caregivers
   const baseConditions = [
     eq(UserModel.role, "giver"),
@@ -249,7 +251,7 @@ export const searchCaregivers = async (req: Request, res: Response) => {
 export const caregiverDetails = async (req: Request, res: Response) => {
   const caregiverId = req.params.id;
   const userId = req.user?.id; // Get user ID if authenticated
-
+ console.log("user",userId);
   // Get user basic details with job profile and about
   const userDetailsPromise = db
     .select({

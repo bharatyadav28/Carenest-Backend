@@ -14,6 +14,26 @@ export const auth = async (req: Request, _: Response, next: NextFunction) => {
   next();
 };
 
+export const optionalAuth = async (
+  req: Request,
+  _: Response,
+  next: NextFunction
+) => {
+  try {
+    const authHeader = req.headers["authorization"];
+    if (authHeader) {
+      const existingUser = await getAuthUser(authHeader);
+      req.user = existingUser;
+    }
+    // If no auth header or invalid token, continue without user
+    next();
+  } catch (error) {
+    // If token is invalid/expired, just continue without user
+    // Don't throw error for optional auth
+    next();
+  }
+};
+
 export const isSeeker = async (
   req: Request,
   _: Response,
