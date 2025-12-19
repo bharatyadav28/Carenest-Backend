@@ -609,12 +609,13 @@ export const getCaregiverBookings = async (req: Request, res: Response) => {
       baseConditions.push(
         and(
           eq(BookingCaregiver.status, "hired"),
-          lte(BookingModel.startDate, new Date().toISOString().split("T")[0]),
+          lte(BookingModel.startDate, today),
           or(gte(BookingModel.endDate, today), isNull(BookingModel.endDate))
         )
       );
   }
 
+  // Use the bookingId from BookingCaregiver to avoid the subquery issue
   const bookings = await db
     .select({
       bookingId: BookingCaregiver.bookingId,
@@ -626,7 +627,7 @@ export const getCaregiverBookings = async (req: Request, res: Response) => {
       zipcode: BookingModel.careseekerZipcode,
       requiredBy: BookingModel.requiredBy,
       
-      // Add care types (services) to the query
+      // Use BookingCaregiver.bookingId instead of BookingModel.id in subqueries
       careTypes: sql`(
         SELECT json_agg(
           json_build_object(
@@ -636,14 +637,18 @@ export const getCaregiverBookings = async (req: Request, res: Response) => {
         )
         FROM ${BookingServices}
         INNER JOIN ${ServiceModel} ON ${ServiceModel.id} = ${BookingServices.serviceId}
-        WHERE ${BookingServices.bookingId} = ${BookingModel.id}
+        WHERE ${BookingServices.bookingId} = ${BookingCaregiver.bookingId}
       )`.as("careTypes"),
 
-      weeklySchedule: sql`array_agg( json_build_object(
-        'weekDay', ${BookingWeeklySchedule.weekDay},
-        'startTime', ${BookingWeeklySchedule.startTime},
-        'endTime', ${BookingWeeklySchedule.endTime}
-      ))`.as("weeklySchedule"),
+      weeklySchedule: sql`(
+        SELECT json_agg(json_build_object(
+          'weekDay', ${BookingWeeklySchedule.weekDay},
+          'startTime', ${BookingWeeklySchedule.startTime},
+          'endTime', ${BookingWeeklySchedule.endTime}
+        ))
+        FROM ${BookingWeeklySchedule}
+        WHERE ${BookingWeeklySchedule.bookingId} = ${BookingCaregiver.bookingId}
+      )`.as("weeklySchedule"),
 
       user: {
         id: sql<string>`
@@ -682,10 +687,6 @@ export const getCaregiverBookings = async (req: Request, res: Response) => {
       eq(BookingCaregiver.bookingId, BookingModel.id)
     )
     .innerJoin(UserModel as any, eq(BookingModel.userId, UserModel.id))
-    .innerJoin(
-      BookingWeeklySchedule,
-      eq(BookingWeeklySchedule.bookingId, BookingModel.id)
-    )
     .groupBy(
       BookingCaregiver.bookingId,
       BookingCaregiver.status,
@@ -695,7 +696,13 @@ export const getCaregiverBookings = async (req: Request, res: Response) => {
       BookingModel.endDate,
       BookingModel.careseekerZipcode,
       BookingModel.requiredBy,
-      UserModel.id
+      UserModel.id,
+      UserModel.name,
+      UserModel.email,
+      UserModel.mobile,
+      UserModel.isDeleted,
+      UserModel.avatar,
+      UserModel.address
     );
 
   return res.status(200).json({
