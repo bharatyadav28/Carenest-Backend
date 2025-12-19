@@ -1,13 +1,12 @@
 import { Request, Response } from "express";
-
 import { db } from "../../db";
 import { DocumentModel } from "./document.model";
 import { BadRequestError } from "../../errors";
 import { s3Uploadv4 } from "../../helpers/s3";
 import { cdnURL, getURLPath } from "../../helpers/utils";
-import { and, eq } from "drizzle-orm";
-import { fi } from "zod/v4/locales/index.cjs";
-import { create } from "lodash";
+import { and, eq, desc } from "drizzle-orm";
+
+
 
 export const uploadGiversDocuments = async (req: Request, res: Response) => {
   if (!req.file) {
@@ -35,10 +34,32 @@ export const saveCaregiverDocuments = async (req: Request, res: Response) => {
     throw new BadRequestError("Please provide documents");
   }
 
-  const formattedDocuments = documents.map((doc: any) => {
+  // Check for existing documents by type
+  for (const doc of documents) {
     if (!doc.type || !doc.fileUrl) {
       throw new Error("Document type and file URL are required");
     }
+
+    // For resume and work_permit, check if user already has one
+    if (doc.type === 'resume' || doc.type === 'work_permit') {
+      const existingDoc = await db
+        .select()
+        .from(DocumentModel)
+        .where(
+          and(
+            eq(DocumentModel.userId, userId),
+            eq(DocumentModel.type, doc.type)
+          )
+        )
+        .limit(1);
+
+      if (existingDoc.length > 0) {
+        throw new BadRequestError(`You already have a ${doc.type.replace('_', ' ')} uploaded`);
+      }
+    }
+  }
+
+  const formattedDocuments = documents.map((doc: any) => {
     return {
       userId,
       type: doc.type,
@@ -70,6 +91,52 @@ export const getCaregiverDocuments = async (req: Request, res: Response) => {
     success: true,
     message: "Documents retrieved successfully",
     data: { documents },
+  });
+};
+
+
+
+// Get work permit (specific type)
+export const getCaregiverWorkPermit = async (req: Request, res: Response) => {
+  const userId = req.user.id;
+
+  const workPermit = await db
+    .select()
+    .from(DocumentModel)
+    .where(
+      and(
+        eq(DocumentModel.userId, userId),
+        eq(DocumentModel.type, 'work_permit')
+      )
+    )
+    .limit(1);
+
+  return res.status(200).json({
+    success: true,
+    message: "Work permit retrieved successfully",
+    data: { workPermit: workPermit[0] || null },
+  });
+};
+
+// Get resume (specific type)
+export const getCaregiverResume = async (req: Request, res: Response) => {
+  const userId = req.user.id;
+
+  const resume = await db
+    .select()
+    .from(DocumentModel)
+    .where(
+      and(
+        eq(DocumentModel.userId, userId),
+        eq(DocumentModel.type, 'resume')
+      )
+    )
+    .limit(1);
+
+  return res.status(200).json({
+    success: true,
+    message: "Resume retrieved successfully",
+    data: { resume: resume[0] || null },
   });
 };
 
@@ -146,5 +213,66 @@ export const saveGiverCertificate = async (req: Request, res: Response) => {
   return res.status(201).json({
     success: true,
     message: "Certificate saved successfully",
+  });
+};
+
+// Update existing document (for resume and work_permit)
+export const updateCaregiverDocument = async (req: Request, res: Response) => {
+  const userId = req.user.id;
+  const { type, fileUrl } = req.body;
+
+  if (!type || !fileUrl) {
+    throw new BadRequestError("Please provide type and file URL");
+  }
+
+  // Only allow resume and work_permit for update
+  if (type !== 'resume' && type !== 'work_permit') {
+    throw new BadRequestError("Only resume and work permit can be updated");
+  }
+
+  // Check if document exists
+  const existingDoc = await db
+    .select()
+    .from(DocumentModel)
+    .where(
+      and(
+        eq(DocumentModel.userId, userId),
+        eq(DocumentModel.type, type)
+      )
+    )
+    .limit(1);
+
+  let result;
+  if (existingDoc.length > 0) {
+    // Update existing
+    result = await db
+      .update(DocumentModel)
+      .set({
+        fileUrl: getURLPath(fileUrl),
+        createdAt: new Date(),
+      })
+      .where(
+        and(
+          eq(DocumentModel.userId, userId),
+          eq(DocumentModel.type, type)
+        )
+      )
+      .returning();
+  } else {
+    // Create new
+    result = await db
+      .insert(DocumentModel)
+      .values({
+        userId,
+        type,
+        fileUrl: getURLPath(fileUrl),
+      })
+      .returning();
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: `${type.replace('_', ' ')} ${existingDoc.length > 0 ? 'updated' : 'created'} successfully`,
+    data: { document: result[0] },
   });
 };
