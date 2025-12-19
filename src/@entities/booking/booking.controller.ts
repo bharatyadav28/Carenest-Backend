@@ -597,7 +597,8 @@ export const getCaregiverBookings = async (req: Request, res: Response) => {
   let { status } = req.query;
 
   const baseConditions = [eq(BookingCaregiver.caregiverId, caregiverId)];
-const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toISOString().split("T")[0];
+
   if (status) {
     status = status.toString().toLowerCase();
     if (status !== "active")
@@ -609,10 +610,7 @@ const today = new Date().toISOString().split("T")[0];
         and(
           eq(BookingCaregiver.status, "hired"),
           lte(BookingModel.startDate, new Date().toISOString().split("T")[0]),
-         or(
-  gte(BookingModel.endDate, today),
-  isNull(BookingModel.endDate)
-)
+          or(gte(BookingModel.endDate, today), isNull(BookingModel.endDate))
         )
       );
   }
@@ -626,8 +624,21 @@ const today = new Date().toISOString().split("T")[0];
       meetingDate: BookingModel.meetingDate,
       endDate: BookingModel.endDate,
       zipcode: BookingModel.careseekerZipcode,
-     
       requiredBy: BookingModel.requiredBy,
+      
+      // Add care types (services) to the query
+      careTypes: sql`(
+        SELECT json_agg(
+          json_build_object(
+            'id', ${ServiceModel.id},
+            'name', ${ServiceModel.name}
+          )
+        )
+        FROM ${BookingServices}
+        INNER JOIN ${ServiceModel} ON ${ServiceModel.id} = ${BookingServices.serviceId}
+        WHERE ${BookingServices.bookingId} = ${BookingModel.id}
+      )`.as("careTypes"),
+
       weeklySchedule: sql`array_agg( json_build_object(
         'weekDay', ${BookingWeeklySchedule.weekDay},
         'startTime', ${BookingWeeklySchedule.startTime},
@@ -647,7 +658,6 @@ const today = new Date().toISOString().split("T")[0];
             ELSE ${UserModel.name}
           END
         `.as("name"),
-
         email: sql<string>`
           CASE
             WHEN ${UserModel.isDeleted} = true THEN ''
