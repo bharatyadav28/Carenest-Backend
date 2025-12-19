@@ -1,4 +1,4 @@
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, ne, lte, isNotNull } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { BookingCaregiver, BookingModel } from "./booking.model";
@@ -11,6 +11,7 @@ import {
   getCareSeekerServiceReminderHTML 
 } from "../../helpers/emailText";
 import { formatDate, careseekerURL, caregiverURL } from "../../helpers/utils";
+import { createNotification } from "../notification/notification.service";
 
 interface cancelBookingParams {
   bookingId: string;
@@ -176,5 +177,104 @@ export const sendServiceReminderEmail = async ({ bookingId }) => {
     
   } catch (error) {
     console.error(`Error sending reminder emails for booking ${bookingId}:`, error);
+  }
+};
+
+// AUTO-COMPLETION FEATURE 
+export const autoCompleteExpiredBookings = async () => {
+  const today = new Date().toISOString().split('T')[0];
+  
+  try {
+    console.log(`[Auto-Complete] Starting for date: ${today}`);
+    
+    // Find bookings to auto-complete
+    const expiredBookings = await db
+      .select({
+        id: BookingModel.id,
+        userId: BookingModel.userId,
+      })
+      .from(BookingModel)
+      .where(
+        and(
+          eq(BookingModel.status, 'accepted'),
+          lte(BookingModel.endDate, today),
+          ne(BookingModel.status, 'completed'),
+          ne(BookingModel.status, 'cancelled'),
+          isNotNull(BookingModel.endDate)
+        )
+      );
+
+    console.log(`[Auto-Complete] Found ${expiredBookings.length} bookings`);
+
+    for (const booking of expiredBookings) {
+      try {
+        // Get assigned caregiver
+        const assignedCaregiver = await db
+          .select({
+            caregiverId: BookingCaregiver.caregiverId,
+            id: BookingCaregiver.id,
+          })
+          .from(BookingCaregiver)
+          .where(
+            and(
+              eq(BookingCaregiver.bookingId, booking.id),
+              eq(BookingCaregiver.status, 'hired')
+            )
+          )
+          .limit(1);
+
+        if (assignedCaregiver.length === 0) {
+          console.log(`[Auto-Complete] No hired caregiver for booking ${booking.id}`);
+          continue;
+        }
+
+        const now = new Date();
+
+        // Update booking and caregiver status
+        await db.transaction(async (tx) => {
+          await tx
+            .update(BookingModel)
+            .set({
+              status: 'completed',
+              completedAt: now,
+              updatedAt: now,
+            })
+            .where(eq(BookingModel.id, booking.id));
+
+          await tx
+            .update(BookingCaregiver)
+            .set({
+              status: 'completed',
+              updatedAt: now,
+            })
+            .where(eq(BookingCaregiver.id, assignedCaregiver[0].id));
+        });
+
+        // Send in-app notifications
+        await createNotification(
+          booking.userId,
+          'Booking Completed',
+          `Your booking #${booking.id} has been automatically completed.`,
+          'booking'
+        ).catch(err => console.error(`Notification error for user ${booking.id}:`, err));
+        
+        await createNotification(
+          assignedCaregiver[0].caregiverId,
+          'Booking Completed',
+          `Your assigned booking #${booking.id} has been automatically completed.`,
+          'booking'
+        ).catch(err => console.error(`Notification error for caregiver ${booking.id}:`, err));
+
+        console.log(`[Auto-Complete] Completed booking ${booking.id}`);
+        
+      } catch (error) {
+        console.error(`[Auto-Complete] Failed booking ${booking.id}:`, error);
+      }
+    }
+
+    console.log(`[Auto-Complete] Job completed`);
+    
+  } catch (error) {
+    console.error('[Auto-Complete] Job failed:', error);
   }
 };

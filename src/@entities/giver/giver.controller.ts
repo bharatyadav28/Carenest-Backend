@@ -415,6 +415,7 @@ export const getAllGiversForAdmin = async (req: Request, res: Response) => {
     eq(UserModel.isDeleted, false),
     eq(UserModel.role, "giver"),
   ];
+
   if (search && typeof search === "string") {
     const searchTerm = `%${search}%`;
     baseConditions.push(
@@ -427,40 +428,44 @@ export const getAllGiversForAdmin = async (req: Request, res: Response) => {
     );
   }
 
+  // Add subscription filter if provided
+  if (hasSubscription !== undefined) {
+    const hasSub = hasSubscription === "true" ;
+    baseConditions.push(eq(UserModel.hasActiveSubscription, hasSub));
+  }
 
   let usersPromise = db
     .select({
       id: UserModel.id,
       name: UserModel.name,
       email: UserModel.email,
-       verified:UserModel.hasActiveSubscription,
+      hasSubscription: UserModel.hasActiveSubscription, 
       mobile: UserModel.mobile,
       gender: UserModel.gender,
       zipcode: UserModel.zipcode,
-
       totalBookingsAllocated: sql<number>`COUNT(
-      CASE
-        WHEN ${BookingCaregiver.status} = 'hired'  THEN 1
-      END 
+        CASE
+          WHEN ${BookingCaregiver.status} = 'hired' THEN 1
+        END
       )::integer`.as("totalBookingsAllocated"),
     })
     .from(UserModel)
     .where(and(...baseConditions))
-    .orderBy(desc(UserModel.createdAt))
     .leftJoin(BookingCaregiver, eq(BookingCaregiver.caregiverId, UserModel.id))
     .groupBy(
       UserModel.id,
       UserModel.name,
-      UserModel.hasActiveSubscription,
+      UserModel.hasActiveSubscription, // Added to groupBy
       UserModel.email,
       UserModel.mobile,
       UserModel.gender,
       UserModel.zipcode
     )
+    .orderBy(desc(UserModel.createdAt))
     .limit(pageSize)
     .offset(skip);
 
-  let totalUsersPromise = await db
+  let totalUsersPromise = db
     .select({
       count: sql<number>`COUNT(*)`.as("count"),
     })
@@ -481,10 +486,11 @@ export const getAllGiversForAdmin = async (req: Request, res: Response) => {
     data: {
       users,
       totalPages,
+      currentPage: pageNumber,
+      totalUsers: totalCount,
     },
   });
 };
-
 export const getProfessionalProfileforAdmin = async (
   req: Request,
   res: Response

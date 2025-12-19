@@ -3,6 +3,7 @@ import cron from "node-cron";
 import { db } from "../db";
 import { UserModel } from "../@entities/user/user.model";
 import { DocumentModel } from "../@entities/document/document.model";
+import { autoCompleteExpiredBookings } from "../@entities/booking/booking.service";
 
 import { and, eq, or, sql } from "drizzle-orm";
 import sendEmail from "./sendEmail";
@@ -42,6 +43,9 @@ cron.schedule("0 0 * * *", async () => {
   try {
     console.log("!!!Cron job running !!!!");
     await sendDocumentUploadReminder();
+
+     // Run auto-complete bookings
+    await autoCompleteExpiredBookings();
   } catch (error) {
     console.log(error);
   }
