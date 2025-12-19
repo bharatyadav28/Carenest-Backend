@@ -1232,11 +1232,11 @@ export const editBooking = async (req: Request, res: Response) => {
     meetingDateTime.getDate()
   );
 
-  if (meetingDateOnly < today)
-    throw new BadRequestError("Please select a future meeting date");
+  // if (meetingDateOnly < today)
+  //   throw new BadRequestError("Please select a future meeting date");
 
-  if (startDateOnly < today)
-    throw new BadRequestError("Please select a future start date");
+  // if (startDateOnly < today)
+  //   throw new BadRequestError("Please select a future start date");
 
   try {
     await db.transaction(async (tx) => {
