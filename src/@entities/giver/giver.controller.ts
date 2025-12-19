@@ -440,6 +440,7 @@ export const getAllGiversForAdmin = async (req: Request, res: Response) => {
       name: UserModel.name,
       email: UserModel.email,
       hasSubscription: UserModel.hasActiveSubscription, 
+      city: UserModel.city,
       mobile: UserModel.mobile,
       gender: UserModel.gender,
       zipcode: UserModel.zipcode,
@@ -457,6 +458,7 @@ export const getAllGiversForAdmin = async (req: Request, res: Response) => {
       UserModel.name,
       UserModel.hasActiveSubscription, // Added to groupBy
       UserModel.email,
+      UserModel.city,
       UserModel.mobile,
       UserModel.gender,
       UserModel.zipcode
@@ -503,6 +505,7 @@ export const getProfessionalProfileforAdmin = async (
       name: UserModel.name,
       email: UserModel.email,
        verified:UserModel.hasActiveSubscription,
+       city: UserModel.city,
       mobile: UserModel.mobile,
       address: UserModel.address,
       zipcode: UserModel.zipcode,
@@ -532,6 +535,7 @@ export const getProfessionalProfileforAdmin = async (
       UserModel.hasActiveSubscription,
       UserModel.address,
       UserModel.zipcode,
+      UserModel.city,
       UserModel.gender,
       UserModel.avatar,
       JobProfileModel.caregivingType,
