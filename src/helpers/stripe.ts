@@ -64,8 +64,8 @@ export const createSubscriptionCheckout = async (userId: string) => {
     line_items: [{ price: plan.stripePriceId, quantity: 1 }],
     metadata: { userId, planId: plan.id },
     subscription_data: { metadata: { userId, planId: plan.id } },
-    success_url: `${frontendDomain}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${frontendDomain}?cancelled=true`,
+    success_url: `${frontendDomain}/subscription?success=true&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${frontendDomain}/subscription?cancelled=true`,
   });
 
   return session.url;
