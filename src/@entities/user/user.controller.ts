@@ -621,7 +621,7 @@ export const createUserByAdmin = async (req: Request, res: Response) => {
 
   return res.status(201).json({
     success: true,
-    message: "New careseeker created successfully",
+    message: "New User created successfully",
   });
 };
 
