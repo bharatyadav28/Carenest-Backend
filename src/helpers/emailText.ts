@@ -1,4 +1,5 @@
 import { caregiverURL, careseekerURL } from "./utils";
+const frontendDomain = "https://carenest-caregiver.vercel.app";
 
 const getCommonEmailTemplate = (
   heading: string,
@@ -902,6 +903,388 @@ export const getCareSeekerServiceReminderHTML = (
             </div>
         </div>
     `;
+
+  return getCommonEmailTemplate(heading, subHeading, body);
+};
+// Add to emailText.ts
+export const getPriceChangeNotificationHTML = (
+  userName: string,
+  oldPrice: number,
+  newPrice: number,
+  subscriptionEndDate: Date
+) => {
+  const heading = "Important: Subscription Price Update";
+  const subHeading = "Your subscription plan has been updated";
+  
+  const formattedOldPrice = `$${(oldPrice / 100).toFixed(2)}`;
+  const formattedNewPrice = `$${(newPrice / 100).toFixed(2)}`;
+  const formattedEndDate = new Date(subscriptionEndDate).toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  const body = `
+    <div style="padding: 45px 40px;">
+      <p style="font-size: 20px; line-height: 1.6; color: #233D4D; margin: 0 0 15px 0; font-weight: 600;">
+        Hi ${userName || "Valued Customer"} 👋
+      </p>
+      
+      <p style="font-size: 16px; line-height: 1.7; color: #5a6c7d; margin: 0 0 25px 0;">
+        We're writing to inform you about an important update to your subscription plan.
+      </p>
+      
+      <!-- Price Change Card -->
+      <div style="background: linear-gradient(135deg, #f8fbff 0%, #fff5e6 100%); border-left: 4px solid #F2A307; border-radius: 12px; padding: 30px; margin: 35px 0;">
+        <h3 style="color: #233D4D; margin: 0 0 25px 0; font-size: 20px; font-weight: 600;">💰 Price Update Details</h3>
+        
+        <div style="background: rgba(255,255,255,0.9); padding: 25px; border-radius: 8px; border: 2px dashed #F2A307;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+              <p style="margin: 0 0 5px 0; color: #5a6c7d; font-size: 14px; font-weight: 600;">Old Price</p>
+              <p style="margin: 0; color: #233D4D; font-size: 24px; font-weight: 700; text-decoration: line-through;">
+                ${formattedOldPrice}
+              </p>
+            </div>
+            <div style="font-size: 24px; color: #F2A307; font-weight: bold;">→</div>
+            <div>
+              <p style="margin: 0 0 5px 0; color: #5a6c7d; font-size: 14px; font-weight: 600;">New Price</p>
+              <p style="margin: 0; color: #28a745; font-size: 28px; font-weight: 800;">
+                ${formattedNewPrice}
+              </p>
+            </div>
+          </div>
+          
+          <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin-top: 20px;">
+            <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.5;">
+              ⚠️ <strong>Important:</strong> Your current subscription will <strong>not auto-renew</strong> at the end of your billing period.
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Current Subscription Status -->
+      <div style="background: linear-gradient(135deg, #f8fbff 0%, #e8f4ff 100%); border-radius: 12px; padding: 25px; margin: 30px 0;">
+        <h4 style="color: #233D4D; margin: 0 0 20px 0; font-size: 18px; font-weight: 600;">📅 Your Current Subscription</h4>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div>
+            <p style="margin: 0 0 5px 0; color: #5a6c7d; font-size: 14px; font-weight: 600;">Current Period Ends</p>
+            <p style="margin: 0; color: #233D4D; font-size: 16px; font-weight: 600;">
+              ${formattedEndDate}
+            </p>
+          </div>
+          <div>
+            <p style="margin: 0 0 5px 0; color: #5a6c7d; font-size: 14px; font-weight: 600;">Auto-Renewal Status</p>
+            <p style="margin: 0; color: #dc3545; font-size: 16px; font-weight: 600;">
+              ❌ Disabled
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Options Section -->
+      <div style="background-color: #f8f9fa; border-radius: 12px; padding: 25px; margin: 35px 0;">
+        <h4 style="color: #233D4D; margin: 0 0 25px 0; font-size: 18px; font-weight: 600; text-align: center;">🎯 Your Options</h4>
+        
+        <div style="display: grid; gap: 20px;">
+          <!-- Option 1 -->
+          <div style="background: white; border: 2px solid #28a745; border-radius: 10px; padding: 20px;">
+            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+              <div style="width: 36px; height: 36px; background: #28a745; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                <span style="color: white; font-size: 16px; font-weight: bold;">1</span>
+              </div>
+              <h5 style="margin: 0; color: #233D4D; font-size: 18px; font-weight: 600;">Continue with New Price</h5>
+            </div>
+            <p style="margin: 0 0 15px 0; color: #5a6c7d; font-size: 14px; line-height: 1.6;">
+              Manually renew your subscription at the new price of <strong>${formattedNewPrice}</strong> before your current period ends.
+            </p>
+            <div style="text-align: right;">
+              <a href="${frontendDomain}/subscription" style="display: inline-block; background: #28a745; color: white; text-decoration: none; padding: 10px 20px; border-radius: 50px; font-weight: 600; font-size: 14px;">
+                View Subscription
+              </a>
+            </div>
+          </div>
+          
+          <!-- Option 2 -->
+          <div style="background: white; border: 2px solid #6c757d; border-radius: 10px; padding: 20px;">
+            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+              <div style="width: 36px; height: 36px; background: #6c757d; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                <span style="color: white; font-size: 16px; font-weight: bold;">2</span>
+              </div>
+              <h5 style="margin: 0; color: #233D4D; font-size: 18px; font-weight: 600;">Let Subscription Expire</h5>
+            </div>
+            <p style="margin: 0 0 15px 0; color: #5a6c7d; font-size: 14px; line-height: 1.6;">
+              Do nothing and your subscription will end on <strong>${formattedEndDate}</strong>. You can subscribe again anytime.
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Next Steps -->
+      <div style="background-color: #fff9f0; border: 1px solid #F2A307; border-radius: 8px; padding: 20px; margin: 30px 0;">
+        <h4 style="color: #233D4D; margin: 0 0 15px 0; font-size: 16px; font-weight: 600;">📝 What Happens Next?</h4>
+        <ol style="margin: 0; padding-left: 20px; color: #5a6c7d; font-size: 14px; line-height: 1.8;">
+          <li>Continue using all features until <strong>${formattedEndDate}</strong></li>
+          <li>Auto-renewal is disabled for your current subscription</li>
+          <li>Visit your subscription page to see renewal options</li>
+          <li>You'll receive a reminder 3 days before expiration</li>
+        </ol>
+      </div>
+      
+      <!-- Support Section -->
+      <div style="background-color: #e8f4ff; border-radius: 8px; padding: 20px; text-align: center; margin-top: 30px;">
+        <p style="margin: 0; color: #233D4D; font-size: 14px;">
+          ❓ <strong>Questions?</strong> Contact our support team at <a href="mailto:support@careworks.com" style="color: #F2A307; text-decoration: none; font-weight: 600;">support@careworks.com</a>
+        </p>
+      </div>
+    </div>
+  `;
+
+  return getCommonEmailTemplate(heading, subHeading, body);
+};
+
+// Add to emailText.ts
+export const getSubscriptionExpirationReminderHTML = (
+  userName: string,
+  newPrice: number,
+  expirationDate: Date
+) => {
+  const heading = "Subscription Expiring Soon";
+  const subHeading = "Renew now to continue uninterrupted service";
+  
+  const formattedPrice = `$${(newPrice / 100).toFixed(2)}`;
+  const formattedExpirationDate = new Date(expirationDate).toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  const body = `
+    <div style="padding: 45px 40px;">
+      <p style="font-size: 20px; line-height: 1.6; color: #233D4D; margin: 0 0 15px 0; font-weight: 600;">
+        Hi ${userName || "Valued Customer"} 👋
+      </p>
+      
+      <p style="font-size: 16px; line-height: 1.7; color: #5a6c7d; margin: 0 0 25px 0;">
+        Just a friendly reminder that your subscription is expiring soon.
+      </p>
+      
+      <!-- Urgent Alert -->
+      <div style="background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); border-left: 4px solid #f39c12; border-radius: 12px; padding: 25px; margin: 30px 0;">
+        <div style="display: flex; align-items: center; margin-bottom: 15px;">
+          <div style="width: 40px; height: 40px; background: #f39c12; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+            <span style="color: white; font-size: 20px; font-weight: bold;">⚠️</span>
+          </div>
+          <h3 style="margin: 0; color: #856404; font-size: 20px; font-weight: 600;">Expiration Alert</h3>
+        </div>
+        <p style="margin: 0; color: #856404; font-size: 16px; line-height: 1.6;">
+          Your subscription ends on <strong>${formattedExpirationDate}</strong> (in 3 days). Renew now to avoid service interruption.
+        </p>
+      </div>
+      
+      <!-- Renewal Card -->
+      <div style="background: linear-gradient(135deg, #f8fbff 0%, #e8f4ff 100%); border-radius: 12px; padding: 30px; margin: 35px 0; text-align: center;">
+        <h3 style="color: #233D4D; margin: 0 0 20px 0; font-size: 24px; font-weight: 700;">${formattedPrice}<span style="font-size: 16px; color: #5a6c7d;">/month</span></h3>
+        <p style="color: #5a6c7d; margin: 0 0 30px 0; font-size: 16px;">
+          Renew at our current price
+        </p>
+        
+        <!-- CTA Button -->
+        <a href="${frontendDomain}/subscription/renew" style="display: inline-block; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: #ffffff; text-decoration: none; padding: 18px 50px; border-radius: 50px; font-weight: 600; font-size: 18px; box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4); border: none; cursor: pointer;">
+          🔄 Renew Subscription Now
+        </a>
+      </div>
+      
+      <!-- Features Reminder -->
+      <div style="background-color: #f8f9fa; border-radius: 12px; padding: 25px; margin: 30px 0;">
+        <h4 style="color: #233D4D; margin: 0 0 20px 0; font-size: 18px; font-weight: 600; text-align: center;">✨ You'll Keep Access To:</h4>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+          <div style="text-align: center;">
+            <p style="margin: 0; color: #233D4D; font-size: 14px; font-weight: 600;">👥 Job Opportunities</p>
+          </div>
+          <div style="text-align: center;">
+            <p style="margin: 0; color: #233D4D; font-size: 14px; font-weight: 600;">📱 Mobile App Access</p>
+          </div>
+          <div style="text-align: center;">
+            <p style="margin: 0; color: #233D4D; font-size: 14px; font-weight: 600;">💬 Priority Support</p>
+          </div>
+          <div style="text-align: center;">
+            <p style="margin: 0; color: #233D4D; font-size: 14px; font-weight: 600;">📊 Analytics Dashboard</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Support Section -->
+      <div style="text-align: center; margin-top: 40px;">
+        <p style="margin: 0; color: #5a6c7d; font-size: 14px;">
+          Need help or have questions? <a href="mailto:support@careworks.com" style="color: #F2A307; text-decoration: none; font-weight: 600;">Contact Support</a>
+        </p>
+      </div>
+    </div>
+  `;
+
+  return getCommonEmailTemplate(heading, subHeading, body);
+};
+// Add to emailText.ts
+export const getOldPriceSubscriptionHTML = (
+  userName: string,
+  subscribedPrice: number,
+  currentPrice: number,
+  subscriptionEndDate: Date
+) => {
+  const heading = "Important: You Subscribed to Previous Price";
+  const subHeading = "Please review your subscription details";
+  
+  const formattedSubscribedPrice = `$${(subscribedPrice / 100).toFixed(2)}`;
+  const formattedCurrentPrice = `$${(currentPrice / 100).toFixed(2)}`;
+  const formattedEndDate = new Date(subscriptionEndDate).toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  const body = `
+    <div style="padding: 45px 40px;">
+      <p style="font-size: 20px; line-height: 1.6; color: #233D4D; margin: 0 0 15px 0; font-weight: 600;">
+        Hi ${userName || "Customer"} 👋
+      </p>
+      
+      <p style="font-size: 16px; line-height: 1.7; color: #5a6c7d; margin: 0 0 25px 0;">
+        We noticed you recently subscribed to our service. There's important information about your subscription price.
+      </p>
+      
+      <!-- Price Alert -->
+      <div style="background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); border-left: 4px solid #f39c12; border-radius: 12px; padding: 30px; margin: 35px 0;">
+        <h3 style="color: #856404; margin: 0 0 20px 0; font-size: 20px; font-weight: 600;">⚠️ Price Information</h3>
+        
+        <div style="background: rgba(255,255,255,0.9); padding: 25px; border-radius: 8px;">
+          <div style="text-align: center; margin-bottom: 20px;">
+            <p style="margin: 0 0 10px 0; color: #5a6c7d; font-size: 14px; font-weight: 600;">Your Subscription Price</p>
+            <p style="margin: 0; color: #233D4D; font-size: 32px; font-weight: 800;">
+              ${formattedSubscribedPrice}
+            </p>
+          </div>
+          
+          <div style="text-align: center;">
+            <p style="margin: 0 0 10px 0; color: #5a6c7d; font-size: 14px; font-weight: 600;">Current Price (for new subscribers)</p>
+            <p style="margin: 0; color: #28a745; font-size: 32px; font-weight: 800;">
+              ${formattedCurrentPrice}
+            </p>
+          </div>
+        </div>
+        
+        <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; padding: 15px; margin-top: 20px;">
+          <p style="margin: 0; color: #721c24; font-size: 14px; line-height: 1.5;">
+            <strong>Note:</strong> You subscribed at a previous price point. Your subscription will <strong>not auto-renew</strong> and will end on <strong>${formattedEndDate}</strong>.
+          </p>
+        </div>
+      </div>
+      
+      <!-- What This Means -->
+      <div style="background: linear-gradient(135deg, #f8fbff 0%, #e8f4ff 100%); border-radius: 12px; padding: 25px; margin: 30px 0;">
+        <h4 style="color: #233D4D; margin: 0 0 20px 0; font-size: 18px; font-weight: 600;">📋 What This Means For You</h4>
+        
+        <div style="display: grid; gap: 15px;">
+          <div style="display: flex; align-items: flex-start;">
+            <div style="min-width: 24px; height: 24px; background: #233D4D; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+              <span style="color: white; font-size: 14px; font-weight: bold;">1</span>
+            </div>
+            <div>
+              <p style="margin: 0 0 5px 0; color: #233D4D; font-size: 16px; font-weight: 600;">Full Access Until ${new Date(subscriptionEndDate).toLocaleDateString('MMM d')}</p>
+              <p style="margin: 0; color: #5a6c7d; font-size: 14px;">Enjoy all features until your subscription ends</p>
+            </div>
+          </div>
+          
+          <div style="display: flex; align-items: flex-start;">
+            <div style="min-width: 24px; height: 24px; background: #233D4D; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+              <span style="color: white; font-size: 14px; font-weight: bold;">2</span>
+            </div>
+            <div>
+              <p style="margin: 0 0 5px 0; color: #233D4D; font-size: 16px; font-weight: 600;">No Auto-Renewal</p>
+              <p style="margin: 0; color: #5a6c7d; font-size: 14px;">Your subscription won't renew automatically</p>
+            </div>
+          </div>
+          
+          <div style="display: flex; align-items: flex-start;">
+            <div style="min-width: 24px; height: 24px; background: #233D4D; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+              <span style="color: white; font-size: 14px; font-weight: bold;">3</span>
+            </div>
+            <div>
+              <p style="margin: 0 0 5px 0; color: #233D4D; font-size: 16px; font-weight: 600;">Renew at Current Price</p>
+              <p style="margin: 0; color: #5a6c7d; font-size: 14px;">You can renew at $${(currentPrice / 100).toFixed(2)} before expiration</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Action Buttons -->
+      <div style="text-align: center; margin: 45px 0 35px 0;">
+        <table style="margin: 0 auto;">
+          <tr>
+            <td style="padding: 10px;">
+              <a href="${frontendDomain}/subscription" style="display: inline-block; background: linear-gradient(135deg, #233D4D 0%, #F2A307 100%); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 50px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(35, 61, 77, 0.3);">
+                📋 View Subscription Details
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px;">
+              <a href="${frontendDomain}/contact-support" style="display: inline-block; background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 50px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);">
+                ❓ Contact Support
+              </a>
+            </td>
+          </tr>
+        </table>
+      </div>
+      
+      <!-- Timeline -->
+      <div style="background-color: #f8f9fa; border-radius: 12px; padding: 25px; margin: 30px 0;">
+        <h4 style="color: #233D4D; margin: 0 0 20px 0; font-size: 18px; font-weight: 600; text-align: center;">📅 Your Subscription Timeline</h4>
+        
+        <div style="position: relative; padding-left: 30px;">
+          <!-- Timeline line -->
+          <div style="position: absolute; left: 15px; top: 0; bottom: 0; width: 2px; background: #F2A307;"></div>
+          
+          <!-- Today -->
+          <div style="position: relative; margin-bottom: 30px;">
+            <div style="position: absolute; left: -25px; width: 20px; height: 20px; background: #28a745; border-radius: 50%; border: 3px solid white;"></div>
+            <div>
+              <p style="margin: 0 0 5px 0; color: #233D4D; font-size: 16px; font-weight: 600;">Today</p>
+              <p style="margin: 0; color: #5a6c7d; font-size: 14px;">You subscribed at $${(subscribedPrice / 100).toFixed(2)}</p>
+            </div>
+          </div>
+          
+          <!-- Subscription End -->
+          <div style="position: relative; margin-bottom: 30px;">
+            <div style="position: absolute; left: -25px; width: 20px; height: 20px; background: #dc3545; border-radius: 50%; border: 3px solid white;"></div>
+            <div>
+              <p style="margin: 0 0 5px 0; color: #233D4D; font-size: 16px; font-weight: 600;">${formattedEndDate}</p>
+              <p style="margin: 0; color: #5a6c7d; font-size: 14px;">Subscription ends - no auto-renewal</p>
+            </div>
+          </div>
+          
+          <!-- Renewal Option -->
+          <div style="position: relative;">
+            <div style="position: absolute; left: -25px; width: 20px; height: 20px; background: #F2A307; border-radius: 50%; border: 3px solid white;"></div>
+            <div>
+              <p style="margin: 0 0 5px 0; color: #233D4D; font-size: 16px; font-weight: 600;">Before ${new Date(subscriptionEndDate).toLocaleDateString('MMM d')}</p>
+              <p style="margin: 0; color: #5a6c7d; font-size: 14px;">Option to renew at $${(currentPrice / 100).toFixed(2)}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div style="text-align: center; margin-top: 40px;">
+        <p style="margin: 0; color: #5a6c7d; font-size: 14px;">
+          Thank you for subscribing! We're here to help if you have any questions.
+        </p>
+      </div>
+    </div>
+  `;
 
   return getCommonEmailTemplate(heading, subHeading, body);
 };

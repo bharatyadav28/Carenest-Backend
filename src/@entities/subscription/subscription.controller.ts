@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { eq } from "drizzle-orm";
+import { eq,and } from "drizzle-orm";
 import { db } from "../../db";
 import { PlanModel } from "../plan/plan.model";
 import { UserModel } from "../user/user.model";
@@ -59,11 +59,21 @@ export const getMySubscription = async (req: Request, res: Response) => {
 
     // Get plan separately if subscription exists
     let plan = null;
+    let currentPlan = null;
+    
     if (subscription?.planId) {
       plan = await db.query.PlanModel.findFirst({
         where: eq(PlanModel.id, subscription.planId),
       });
     }
+
+    // Get current (latest) plan
+    currentPlan = await db.query.PlanModel.findFirst({
+      where: and(
+        eq(PlanModel.name, "Monthly Plan"),
+        eq(PlanModel.isLatest, true)
+      ),
+    });
 
     // Get user subscription status
     const user = await db.query.UserModel.findFirst({
@@ -71,13 +81,31 @@ export const getMySubscription = async (req: Request, res: Response) => {
       columns: { hasActiveSubscription: true }
     });
 
+    // Check if user is on old price
+    const isOnOldPrice = plan?.id !== currentPlan?.id && plan?.amount !== currentPlan?.amount;
+    const priceDifference = currentPlan && plan ? currentPlan.amount - plan.amount : 0;
+
     // Format response
     const subscriptionData = subscription ? {
       ...subscription,
       plan: plan ? {
         ...plan,
         displayAmount: `$${(plan.amount / 100).toFixed(2)}`,
+        isCurrentPrice: plan.id === currentPlan?.id,
       } : null,
+      pricingInfo: {
+        isOnOldPrice,
+        currentPrice: currentPlan ? `$${(currentPlan.amount / 100).toFixed(2)}` : null,
+        priceDifference: priceDifference !== 0 ? {
+          amount: Math.abs(priceDifference / 100),
+          formatted: `$${Math.abs(priceDifference / 100).toFixed(2)}`,
+          isIncrease: priceDifference > 0,
+          percentage: currentPlan && plan ? 
+            Math.round((Math.abs(priceDifference) / plan.amount) * 100) : 0
+        } : null,
+        needsRenewal: isOnOldPrice && subscription.cancelAtPeriodEnd,
+        canRenewAtCurrentPrice: isOnOldPrice && subscription.status === "active"
+      }
     } : null;
 
     res.json({
@@ -85,6 +113,10 @@ export const getMySubscription = async (req: Request, res: Response) => {
       data: {
         subscription: subscriptionData,
         hasActiveSubscription: user?.hasActiveSubscription || false,
+        currentPlan: currentPlan ? {
+          ...currentPlan,
+          displayAmount: `$${(currentPlan.amount / 100).toFixed(2)}`,
+        } : null
       }
     });
   } catch (error: any) {
@@ -307,3 +339,40 @@ export const getAllSubscriptions = async (req: Request, res: Response) => {
     });
   }
 };
+// Add to subscription.controller.ts - NEW endpoint for renewal
+export const renewSubscription = async (req: Request, res: Response) => {
+  const userId = req.user.id;
+
+  try {
+    // Check if user has a subscription scheduled for cancellation
+    const existingSubscription = await db.query.SubscriptionModel.findFirst({
+      where: eq(SubscriptionModel.userId, userId),
+    });
+
+    if (!existingSubscription) {
+      throw new BadRequestError("No subscription found");
+    }
+
+    // Check if subscription is active but not auto-renewing
+    if (existingSubscription.status !== "active" || !existingSubscription.cancelAtPeriodEnd) {
+      throw new BadRequestError("Subscription is not scheduled for cancellation");
+    }
+
+    // Create checkout for renewal with current price
+    const checkoutUrl = await createSubscriptionCheckout(userId);
+
+    res.json({
+      success: true,
+      message: "Renewal checkout created",
+      data: { checkoutUrl }
+    });
+  } catch (error: any) {
+    console.error("Error creating renewal checkout:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to create renewal checkout",
+    });
+  }
+};
+
+

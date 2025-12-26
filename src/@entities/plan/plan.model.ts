@@ -1,3 +1,4 @@
+// @entities/plan/plan.model.ts - UPDATED
 import { pgTable, varchar, integer, text, boolean } from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
 import { min_timestamps } from "../../helpers/columns";
@@ -18,6 +19,9 @@ export const PlanModel = pgTable("subscriptionplan", {
   stripePriceId: varchar("stripe_price_id", { length: 255 }),
 
   isActive: boolean("is_active").default(true),
+  isLatest: boolean("is_latest").default(true), // NEW: Track latest price
+  
+  previousPlanId: varchar("previous_plan_id", { length: 21 }), // NEW: Track price change chain
 
   ...min_timestamps,
 });
