@@ -1,0 +1,1 @@
+ALTER TABLE "job_profile" ALTER COLUMN "max_price" SET DEFAULT 0;

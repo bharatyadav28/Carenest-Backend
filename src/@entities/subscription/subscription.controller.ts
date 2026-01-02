@@ -1,5 +1,6 @@
+// @entities/subscription/subscription.controller.ts - UPDATED
 import { Request, Response } from "express";
-import { eq,and } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "../../db";
 import { PlanModel } from "../plan/plan.model";
 import { UserModel } from "../user/user.model";
@@ -9,28 +10,23 @@ import {
   createSubscriptionCheckout, 
   getSubscriptionStatus, 
   scheduleSubscriptionCancellation,
-  reactivateStripeSubscription 
+  reactivateStripeSubscription,
+  updateSubscriptionPrice
 } from "../../helpers/stripe";
 
-// 1. CREATE SUBSCRIPTION CHECKOUT - FIXED to allow resubscription
+// 1. CREATE SUBSCRIPTION CHECKOUT
 export const createSubscriptionCheckoutController = async (req: Request, res: Response) => {
   const userId = req.user.id;
 
   try {
-    // Check if user has an ACTIVE subscription (not cancelled or past_due)
     const existingSubscription = await db.query.SubscriptionModel.findFirst({
       where: eq(SubscriptionModel.userId, userId),
     });
 
-    // Only block if user has an ACTIVE subscription
     if (existingSubscription?.status === "active") {
       throw new BadRequestError("You already have an active subscription");
     }
 
-    // If user has a CANCELED or PAST_DUE subscription, allow checkout
-    // The webhook will UPDATE the existing record
-
-    // Create checkout
     const checkoutUrl = await createSubscriptionCheckout(userId);
 
     res.json({
@@ -47,17 +43,15 @@ export const createSubscriptionCheckoutController = async (req: Request, res: Re
   }
 };
 
-// 2. GET MY SUBSCRIPTION
+// 2. GET MY SUBSCRIPTION - UPDATED
 export const getMySubscription = async (req: Request, res: Response) => {
   const userId = req.user.id;
 
   try {
-    // Get subscription (without relations)
     const subscription = await db.query.SubscriptionModel.findFirst({
       where: eq(SubscriptionModel.userId, userId),
     });
 
-    // Get plan separately if subscription exists
     let plan = null;
     let currentPlan = null;
     
@@ -67,7 +61,6 @@ export const getMySubscription = async (req: Request, res: Response) => {
       });
     }
 
-    // Get current (latest) plan
     currentPlan = await db.query.PlanModel.findFirst({
       where: and(
         eq(PlanModel.name, "Monthly Plan"),
@@ -75,17 +68,15 @@ export const getMySubscription = async (req: Request, res: Response) => {
       ),
     });
 
-    // Get user subscription status
     const user = await db.query.UserModel.findFirst({
       where: eq(UserModel.id, userId),
       columns: { hasActiveSubscription: true }
     });
 
-    // Check if user is on old price
-    const isOnOldPrice = plan?.id !== currentPlan?.id && plan?.amount !== currentPlan?.amount;
+    // FIXED: Check only by plan ID, not amount
+    const isOnOldPrice = plan?.id !== currentPlan?.id;
     const priceDifference = currentPlan && plan ? currentPlan.amount - plan.amount : 0;
 
-    // Format response
     const subscriptionData = subscription ? {
       ...subscription,
       plan: plan ? {
@@ -104,7 +95,8 @@ export const getMySubscription = async (req: Request, res: Response) => {
             Math.round((Math.abs(priceDifference) / plan.amount) * 100) : 0
         } : null,
         needsRenewal: isOnOldPrice && subscription.cancelAtPeriodEnd,
-        canRenewAtCurrentPrice: isOnOldPrice && subscription.status === "active"
+        canRenewAtCurrentPrice: isOnOldPrice && subscription.status === "active",
+        requiresPriceUpdate: isOnOldPrice && subscription.cancelAtPeriodEnd
       }
     } : null;
 
@@ -129,7 +121,7 @@ export const getMySubscription = async (req: Request, res: Response) => {
   }
 };
 
-// 3. CANCEL SUBSCRIPTION - Cancel at period end
+// 3. CANCEL SUBSCRIPTION
 export const cancelSubscription = async (req: Request, res: Response) => {
   const userId = req.user.id;
 
@@ -152,20 +144,15 @@ export const cancelSubscription = async (req: Request, res: Response) => {
       });
     }
 
-    // ✅ Schedule cancellation at period end (NOT immediate)
     await scheduleSubscriptionCancellation(subscription.stripeSubscriptionId);
 
-    // Update database - mark for cancellation at period end
     await db
       .update(SubscriptionModel)
       .set({
-        cancelAtPeriodEnd: true, // ✅ This is TRUE - will cancel at period end
+        cancelAtPeriodEnd: true,
         updatedAt: new Date(),
       })
       .where(eq(SubscriptionModel.id, subscription.id));
-
-    // ✅ DO NOT update user.hasActiveSubscription now!
-    // User keeps access until currentPeriodEnd
 
     const currentPeriodEnd = new Date(subscription.currentPeriodEnd);
     const formattedDate = currentPeriodEnd.toLocaleDateString('en-US', {
@@ -181,7 +168,7 @@ export const cancelSubscription = async (req: Request, res: Response) => {
         accessUntil: subscription.currentPeriodEnd,
         currentPeriodEnd: subscription.currentPeriodEnd,
         cancelAtPeriodEnd: true,
-        status: "active", // Still active until period ends
+        status: "active",
       }
     });
   } catch (error: any) {
@@ -194,7 +181,7 @@ export const cancelSubscription = async (req: Request, res: Response) => {
   }
 };
 
-// 4. REACTIVATE SUBSCRIPTION - NEW ENDPOINT
+// 4. REACTIVATE SUBSCRIPTION - UPDATED
 export const reactivateSubscription = async (req: Request, res: Response) => {
   const userId = req.user.id;
 
@@ -210,7 +197,30 @@ export const reactivateSubscription = async (req: Request, res: Response) => {
       });
     }
 
-    // Check if subscription is scheduled for cancellation
+    const currentPlan = await db.query.PlanModel.findFirst({
+      where: eq(PlanModel.id, subscription.planId),
+    });
+
+    const latestPlan = await db.query.PlanModel.findFirst({
+      where: and(
+        eq(PlanModel.name, "Monthly Plan"),
+        eq(PlanModel.isLatest, true)
+      ),
+    });
+
+    // Check if user is trying to reactivate an old price
+    if (currentPlan?.id !== latestPlan?.id && subscription.cancelAtPeriodEnd) {
+      return res.status(400).json({
+        success: false,
+        message: `Price has changed from $${(currentPlan!.amount / 100).toFixed(2)} to $${(latestPlan!.amount / 100).toFixed(2)}. Please use the "Accept New Price" option to continue.`,
+        data: {
+          requiresPriceUpdate: true,
+          oldPrice: `$${(currentPlan!.amount / 100).toFixed(2)}`,
+          newPrice: `$${(latestPlan!.amount / 100).toFixed(2)}`
+        }
+      });
+    }
+
     if (!subscription.cancelAtPeriodEnd || subscription.status !== "active") {
       return res.status(400).json({
         success: false,
@@ -218,10 +228,8 @@ export const reactivateSubscription = async (req: Request, res: Response) => {
       });
     }
 
-    // Reactivate on Stripe
     await reactivateStripeSubscription(subscription.stripeSubscriptionId);
 
-    // Update database
     await db
       .update(SubscriptionModel)
       .set({
@@ -308,7 +316,6 @@ export const getAllSubscriptions = async (req: Request, res: Response) => {
       .leftJoin(PlanModel, eq(SubscriptionModel.planId, PlanModel.id))
       .orderBy(SubscriptionModel.createdAt);
 
-    // Format amount for display
     const formattedSubscriptions = subscriptions.map(sub => ({
       id: sub.id,
       userId: sub.userId,
@@ -339,12 +346,12 @@ export const getAllSubscriptions = async (req: Request, res: Response) => {
     });
   }
 };
-// Add to subscription.controller.ts - NEW endpoint for renewal
+
+// 7. RENEW SUBSCRIPTION - UPDATED (NO IMMEDIATE PAYMENT)
 export const renewSubscription = async (req: Request, res: Response) => {
   const userId = req.user.id;
 
   try {
-    // Check if user has a subscription scheduled for cancellation
     const existingSubscription = await db.query.SubscriptionModel.findFirst({
       where: eq(SubscriptionModel.userId, userId),
     });
@@ -353,26 +360,165 @@ export const renewSubscription = async (req: Request, res: Response) => {
       throw new BadRequestError("No subscription found");
     }
 
-    // Check if subscription is active but not auto-renewing
     if (existingSubscription.status !== "active" || !existingSubscription.cancelAtPeriodEnd) {
       throw new BadRequestError("Subscription is not scheduled for cancellation");
     }
 
-    // Create checkout for renewal with current price
-    const checkoutUrl = await createSubscriptionCheckout(userId);
+    const currentPlan = await db.query.PlanModel.findFirst({
+      where: eq(PlanModel.id, existingSubscription.planId),
+    });
+
+    const latestPlan = await db.query.PlanModel.findFirst({
+      where: and(
+        eq(PlanModel.name, "Monthly Plan"),
+        eq(PlanModel.isLatest, true)
+      ),
+    });
+
+    if (!currentPlan || !latestPlan) {
+      throw new BadRequestError("Plan information not available");
+    }
+
+    const isOnOldPrice = currentPlan.id !== latestPlan.id;
+    
+    if (!isOnOldPrice) {
+      throw new BadRequestError("You are already on the current price");
+    }
+
+    // Update subscription to new price (no immediate payment)
+    await updateSubscriptionPrice(
+      existingSubscription.stripeSubscriptionId,
+      latestPlan.stripePriceId!
+    );
+
+    // Update database
+    await db
+      .update(SubscriptionModel)
+      .set({
+        cancelAtPeriodEnd: false,
+        planId: latestPlan.id,
+        updatedAt: new Date(),
+      })
+      .where(eq(SubscriptionModel.id, existingSubscription.id));
+
+    const currentPeriodEnd = new Date(existingSubscription.currentPeriodEnd);
+    const formattedDate = currentPeriodEnd.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
 
     res.json({
       success: true,
-      message: "Renewal checkout created",
-      data: { checkoutUrl }
+      message: `Subscription updated to new price! You'll be charged $${(latestPlan.amount / 100).toFixed(2)} starting from ${formattedDate}.`,
+      data: {
+        status: "active",
+        cancelAtPeriodEnd: false,
+        currentPeriodEnd: existingSubscription.currentPeriodEnd,
+        oldPrice: `$${(currentPlan.amount / 100).toFixed(2)}`,
+        newPrice: `$${(latestPlan.amount / 100).toFixed(2)}`
+      }
     });
   } catch (error: any) {
-    console.error("Error creating renewal checkout:", error);
+    console.error("Error updating subscription price:", error);
     res.status(500).json({
       success: false,
-      message: error.message || "Failed to create renewal checkout",
+      message: error.message || "Failed to update subscription price",
     });
   }
 };
 
+// 8. REACTIVATE WITH PRICE UPDATE - HELPER ENDPOINT
+export const reactivateSubscriptionWithPriceUpdate = async (req: Request, res: Response) => {
+  const userId = req.user.id;
 
+  try {
+    const subscription = await db.query.SubscriptionModel.findFirst({
+      where: eq(SubscriptionModel.userId, userId),
+    });
+
+    if (!subscription) {
+      return res.status(400).json({
+        success: false,
+        message: "No subscription found"
+      });
+    }
+
+    const currentPlan = await db.query.PlanModel.findFirst({
+      where: eq(PlanModel.id, subscription.planId),
+    });
+
+    const latestPlan = await db.query.PlanModel.findFirst({
+      where: and(
+        eq(PlanModel.name, "Monthly Plan"),
+        eq(PlanModel.isLatest, true)
+      ),
+    });
+
+    if (!currentPlan || !latestPlan) {
+      return res.status(400).json({
+        success: false,
+        message: "Plan information not available"
+      });
+    }
+
+    const isOnOldPrice = currentPlan.id !== latestPlan.id;
+
+    if (isOnOldPrice && subscription.cancelAtPeriodEnd) {
+      return res.json({
+        success: false,
+        message: "Price has changed. Please use the 'Accept New Price' option.",
+        data: {
+          requiresPriceUpdate: true,
+          oldPrice: `$${(currentPlan.amount / 100).toFixed(2)}`,
+          newPrice: `$${(latestPlan.amount / 100).toFixed(2)}`,
+          priceDifference: `$${Math.abs((latestPlan.amount - currentPlan.amount) / 100).toFixed(2)}`,
+          isPriceIncrease: latestPlan.amount > currentPlan.amount
+        }
+      });
+    }
+
+    if (!subscription.cancelAtPeriodEnd || subscription.status !== "active") {
+      return res.status(400).json({
+        success: false,
+        message: "Subscription is not scheduled for cancellation"
+      });
+    }
+
+    await reactivateStripeSubscription(subscription.stripeSubscriptionId);
+
+    await db
+      .update(SubscriptionModel)
+      .set({
+        cancelAtPeriodEnd: false,
+        status: "active",
+        updatedAt: new Date(),
+      })
+      .where(eq(SubscriptionModel.id, subscription.id));
+
+    const currentPeriodEnd = new Date(subscription.currentPeriodEnd);
+    const formattedDate = currentPeriodEnd.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
+
+    res.json({
+      success: true,
+      message: `Subscription reactivated! It will now renew on ${formattedDate}`,
+      data: {
+        status: "active",
+        cancelAtPeriodEnd: false,
+        currentPeriodEnd: subscription.currentPeriodEnd,
+        requiresPriceUpdate: false
+      }
+    });
+  } catch (error: any) {
+    console.error("Error reactivating subscription:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to reactivate subscription",
+      error: error.message
+    });
+  }
+};

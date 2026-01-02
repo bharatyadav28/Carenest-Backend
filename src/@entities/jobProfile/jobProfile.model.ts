@@ -19,7 +19,7 @@ export const JobProfileModel = pgTable("job_profile", {
 
   minPrice: integer("min_price").notNull().default(0),
 
-  maxPrice: integer("max_price").notNull(),
+  maxPrice: integer("max_price").notNull().default(1),
 
   locationRange: varchar("location_range", { length: 255 }).notNull(),
 
@@ -43,7 +43,7 @@ export const JobProfileModel = pgTable("job_profile", {
 export const createJobProfileSchema = z.object({
   caregivingType: z.string().trim().max(255),
   minPrice: z.number().int().min(0).default(0),
-  maxPrice: z.number().int().positive(),
+  maxPrice: z.number().int().default(1),
   locationRange: z.string().trim().max(255),
   experienceMin: z.number().int().min(0).default(0),
   experienceMax: z.number().int().positive(),

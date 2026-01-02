@@ -38,7 +38,7 @@ export const createMonthlyPlan = async (req: Request, res: Response) => {
     // 1. Create Stripe Product
     const product = await stripe.products.create({
       name: "Monthly Caregiver Plan",
-      description: "$10 per month subscription",
+      description: "Monthly plan subscription",
     });
 
     // 2. Create Stripe Price ($10/month)
@@ -123,134 +123,191 @@ export const getPlans = async (req: Request, res: Response) => {
 };
 
 // NEW: Update plan price with proper handling
+// COMPLETELY CORRECTED updatePlanPrice function
+// CORRECTED: updatePlanPrice function - Notifies ALL active customers
 export const updatePlanPrice = async (req: Request, res: Response) => {
   const { planId } = req.params;
   const { newAmount } = req.body; // in cents
 
   try {
-    // Find the existing plan
-    const existingPlan = await db.query.PlanModel.findFirst({
-      where: eq(PlanModel.id, planId),
+    console.log(`🔄 Updating price to $${(newAmount / 100).toFixed(2)}`);
+
+    // Find the CURRENT latest plan
+    const currentLatestPlan = await db.query.PlanModel.findFirst({
+      where: and(
+        eq(PlanModel.name, "Monthly Plan"),
+        eq(PlanModel.isLatest, true)
+      ),
     });
 
-    if (!existingPlan) {
+    if (!currentLatestPlan) {
       return res.status(404).json({
         success: false,
-        message: "Plan not found"
+        message: "No current plan found"
       });
     }
+
+    console.log(`📊 Current latest plan: $${(currentLatestPlan.amount / 100).toFixed(2)}`);
 
     // Create new price in Stripe
     const newPrice = await stripe.prices.create({
       unit_amount: newAmount,
       currency: "usd",
-      recurring: { interval: existingPlan.interval as Stripe.Price.Recurring.Interval },
-      product: existingPlan.stripeProductId!,
+      recurring: { interval: currentLatestPlan.interval as Stripe.Price.Recurring.Interval },
+      product: currentLatestPlan.stripeProductId!,
     });
 
-    // Mark old plan as not latest
+    // Mark current latest as not latest
     await db
       .update(PlanModel)
       .set({
         isLatest: false,
         updatedAt: new Date(),
       })
-      .where(eq(PlanModel.id, planId));
+      .where(eq(PlanModel.id, currentLatestPlan.id));
 
-    // Create new plan record with new price
+    // Create new plan record
     const [newPlan] = await db.insert(PlanModel).values({
-      name: existingPlan.name,
-      description: existingPlan.description,
+      name: currentLatestPlan.name,
+      description: currentLatestPlan.description,
       amount: newAmount,
-      interval: existingPlan.interval,
-      stripeProductId: existingPlan.stripeProductId,
+      interval: currentLatestPlan.interval,
+      stripeProductId: currentLatestPlan.stripeProductId,
       stripePriceId: newPrice.id,
       isActive: true,
-      isLatest: true, // This is now the latest price
-      previousPlanId: planId, // Track relationship
+      isLatest: true,
+      previousPlanId: currentLatestPlan.id,
     }).returning();
 
-    // Get all active subscriptions with the OLD price (planId)
-    const activeSubscriptions = await db
+    console.log(`✨ New plan created: $${(newPlan!.amount / 100).toFixed(2)}`);
+
+    // FIX: Get ALL active subscriptions regardless of cancelAtPeriodEnd
+    const allSubscriptions = await db
       .select({
         subscription: SubscriptionModel,
-        user: UserModel
+        user: UserModel,
+        plan: PlanModel
       })
       .from(SubscriptionModel)
       .innerJoin(UserModel, eq(SubscriptionModel.userId, UserModel.id))
+      .innerJoin(PlanModel, eq(SubscriptionModel.planId, PlanModel.id))
       .where(
         and(
-          eq(SubscriptionModel.planId, planId), // Old plan ID
-          eq(SubscriptionModel.status, "active"),
-          eq(SubscriptionModel.cancelAtPeriodEnd, false)
+          eq(PlanModel.name, "Monthly Plan"),
+          eq(SubscriptionModel.status, "active")
+          // REMOVED: eq(SubscriptionModel.cancelAtPeriodEnd, false)
         )
       );
 
-    // For each active subscription, cancel auto-renewal at period end
-    const notificationPromises = activeSubscriptions.map(async ({ subscription, user }) => {
+    console.log(`🔍 Found ${allSubscriptions.length} total active subscriptions (including those already marked to cancel)`);
+
+    // Filter to get subscriptions on OLD prices (not the new plan)
+    const oldPriceSubscriptions = allSubscriptions.filter(
+      ({ plan }) => plan.id !== newPlan!.id
+    );
+
+    console.log(`📋 Found ${oldPriceSubscriptions.length} subscriptions on old prices`);
+
+    // Group by price AND cancellation status for reporting
+    const priceGroups: Record<string, number> = {};
+    const cancellationStatusGroups = {
+      willCancel: 0, // cancelAtPeriodEnd: false
+      alreadyCancelling: 0 // cancelAtPeriodEnd: true
+    };
+
+    oldPriceSubscriptions.forEach(({ subscription, plan }) => {
+      const priceKey = `$${(plan.amount / 100).toFixed(2)}`;
+      priceGroups[priceKey] = (priceGroups[priceKey] || 0) + 1;
+      
+      // Track cancellation status
+      if (subscription.cancelAtPeriodEnd) {
+        cancellationStatusGroups.alreadyCancelling++;
+      } else {
+        cancellationStatusGroups.willCancel++;
+      }
+    });
+
+    console.log('💰 Price groups:', priceGroups);
+    console.log('📊 Cancellation status:', cancellationStatusGroups);
+
+    // Process each subscription on old price
+    const notificationPromises = oldPriceSubscriptions.map(async ({ subscription, user, plan }) => {
       try {
-        // Cancel auto-renewal in Stripe
-        await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
-          cancel_at_period_end: true,
-        });
+        console.log(`🔄 Processing ${user.email} on $${(plan.amount / 100).toFixed(2)} plan (cancelAtPeriodEnd: ${subscription.cancelAtPeriodEnd})`);
 
-        // Update database
-        await db
-          .update(SubscriptionModel)
-          .set({
-            cancelAtPeriodEnd: true,
-            updatedAt: new Date(),
-          })
-          .where(eq(SubscriptionModel.id, subscription.id));
+        // ONLY cancel auto-renewal if it's not already cancelled
+        if (!subscription.cancelAtPeriodEnd) {
+          await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+            cancel_at_period_end: true,
+          });
 
-        // Send email notification
+          // Update database
+          await db
+            .update(SubscriptionModel)
+            .set({
+              cancelAtPeriodEnd: true,
+              updatedAt: new Date(),
+            })
+            .where(eq(SubscriptionModel.id, subscription.id));
+        } else {
+          console.log(`ℹ️ ${user.email} already marked for cancellation, skipping Stripe update`);
+        }
+
+        // Send email notification to ALL users
         await sendEmail({
           to: user.email,
           subject: "Important: Subscription Price Update",
           html: getPriceChangeNotificationHTML(
             user.name || "Valued Customer",
-            existingPlan.amount,
+            plan.amount,
             newAmount,
-            subscription.currentPeriodEnd
+            subscription.currentPeriodEnd,
+            subscription.cancelAtPeriodEnd // Pass cancellation status for personalized message
           )
         });
 
-        // Create in-app notification
+        // Create in-app notification for ALL users
         await createNotification(
           user.id,
           "Subscription Price Update",
-          `Our subscription price has changed from $${(existingPlan.amount / 100).toFixed(2)} to $${(newAmount / 100).toFixed(2)}. Your current subscription will not auto-renew. Please review your options before it ends on ${new Date(subscription.currentPeriodEnd).toLocaleDateString()}.`,
+          subscription.cancelAtPeriodEnd 
+            ? `Our subscription price has changed from $${(plan.amount / 100).toFixed(2)} to $${(newAmount / 100).toFixed(2)}. Your current subscription is already set to not auto-renew. Please review your options before it ends on ${new Date(subscription.currentPeriodEnd).toLocaleDateString()}.`
+            : `Our subscription price has changed from $${(plan.amount / 100).toFixed(2)} to $${(newAmount / 100).toFixed(2)}. Your current subscription will not auto-renew. Please review your options before it ends on ${new Date(subscription.currentPeriodEnd).toLocaleDateString()}.`,
           "system"
         );
 
-        console.log(`✅ Notified user ${user.email} about price change`);
+        console.log(`✅ Notified ${user.email} ($${(plan.amount / 100).toFixed(2)} → $${(newAmount / 100).toFixed(2)})`);
 
       } catch (error) {
-        console.error(`Failed to notify user ${user.id}:`, error);
+        console.error(`❌ Failed to notify ${user.email}:`, error);
       }
     });
 
-    // Wait for all notifications to be sent
     await Promise.all(notificationPromises);
-
-    // Archive the old price in Stripe (optional)
-    // await stripe.prices.update(existingPlan.stripePriceId!, {
-    //   active: false,
-    // });
 
     res.json({
       success: true,
-      message: `Price updated successfully from $${(existingPlan.amount / 100).toFixed(2)} to $${(newAmount / 100).toFixed(2)}. ${activeSubscriptions.length} existing customers have been notified and their subscriptions will not auto-renew.`,
+      message: `Price updated to $${(newAmount / 100).toFixed(2)}. ${oldPriceSubscriptions.length} customers on previous prices have been notified.`,
       data: {
         oldPlan: {
-          ...existingPlan,
-          displayAmount: `$${(existingPlan.amount / 100).toFixed(2)}`,
+          ...currentLatestPlan,
+          displayAmount: `$${(currentLatestPlan.amount / 100).toFixed(2)}`,
         },
         newPlan: {
           ...newPlan,
           displayAmount: `$${(newPlan!.amount / 100).toFixed(2)}`,
         },
-        affectedCustomers: activeSubscriptions.length
+        totalCustomersNotified: oldPriceSubscriptions.length,
+        priceGroups: priceGroups,
+        cancellationStatus: cancellationStatusGroups,
+        summary: {
+          willStopAutoRenew: cancellationStatusGroups.willCancel,
+          alreadyStoppingRenewal: cancellationStatusGroups.alreadyCancelling,
+          affectedPriceTiers: Object.entries(priceGroups).map(([price, count]) => ({
+            price,
+            customerCount: count
+          }))
+        }
       }
     });
 

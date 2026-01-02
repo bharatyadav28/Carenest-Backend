@@ -44,7 +44,33 @@ const getOrCreateCustomer = async (userId: string, email: string) => {
 // CHECKOUT SESSION CREATION - UPDATED for latest price
 // --------------------------------------------------
 
-export const createSubscriptionCheckout = async (userId: string) => {
+// helpers/stripe.ts - ADD THIS FUNCTION
+export const updateSubscriptionPrice = async (subscriptionId: string, newPriceId: string) => {
+  try {
+    // First retrieve the subscription to get the item ID
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    
+    // Update the subscription to use new price from next billing cycle
+    const updatedSubscription = await stripe.subscriptions.update(
+      subscriptionId,
+      {
+        items: [{
+          id: subscription.items.data[0].id,
+          price: newPriceId,
+        }],
+        cancel_at_period_end: false, // Remove cancellation flag
+        proration_behavior: 'none', // No immediate charge
+      }
+    );
+    
+    return updatedSubscription;
+  } catch (error: any) {
+    throw new Error(`Failed to update subscription price: ${error.message}`);
+  }
+};
+
+// Also update the createSubscriptionCheckout to accept isRenewal parameter
+export const createSubscriptionCheckout = async (userId: string, isRenewal: boolean = false) => {
   const user = await db.query.UserModel.findFirst({
     where: eq(UserModel.id, userId),
     columns: { email: true },
@@ -52,7 +78,6 @@ export const createSubscriptionCheckout = async (userId: string) => {
 
   if (!user?.email) throw new Error("User email not found");
 
-  // Always get the LATEST active plan (new users get latest price)
   const plan = await db.query.PlanModel.findFirst({
     where: and(
       eq(PlanModel.name, "Monthly Plan"),
@@ -70,13 +95,19 @@ export const createSubscriptionCheckout = async (userId: string) => {
     mode: "subscription",
     payment_method_types: ["card"],
     line_items: [{ price: plan.stripePriceId, quantity: 1 }],
-    metadata: { userId, planId: plan.id },
-    subscription_data: { metadata: { userId, planId: plan.id } },
+    metadata: { 
+      userId, 
+      planId: plan.id,
+      isRenewal: isRenewal.toString() 
+    },
+    subscription_data: { 
+      metadata: { userId, planId: plan.id },
+    },
     success_url: `${frontendDomain}/subscription?success=true&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${frontendDomain}/subscription?cancelled=true`,
   });
 
-  console.log(`🎯 Checkout created for user ${user.email} at LATEST price: $${(plan.amount / 100).toFixed(2)}`);
+  console.log(`🎯 Checkout created for user ${user.email} at price: $${(plan.amount / 100).toFixed(2)}`);
 
   return session.url;
 };
