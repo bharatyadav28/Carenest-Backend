@@ -20,7 +20,7 @@ planRouter.get("/", getPlans);
 planRouter.get("/history", isAdmin, getPriceHistory);
 
 // Update plan price (admin only)
-planRouter.patch("/:planId/price", isAdmin, updatePlanPrice);
+planRouter.patch("/update-price", isAdmin, updatePlanPrice);
 
 
 

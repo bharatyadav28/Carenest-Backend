@@ -122,15 +122,13 @@ export const getPlans = async (req: Request, res: Response) => {
   }
 };
 
-// NEW: Update plan price with proper handling
-// COMPLETELY CORRECTED updatePlanPrice function
-// CORRECTED: updatePlanPrice function - Notifies ALL active customers
+//  Update plan price with proper handling
+
 export const updatePlanPrice = async (req: Request, res: Response) => {
-  const { planId } = req.params;
   const { newAmount } = req.body; // in cents
 
   try {
-    console.log(`🔄 Updating price to $${(newAmount / 100).toFixed(2)}`);
+    console.log(` Updating price to $${(newAmount / 100).toFixed(2)}`);
 
     // Find the CURRENT latest plan
     const currentLatestPlan = await db.query.PlanModel.findFirst({
