@@ -7,7 +7,7 @@ import cors from "cors";
 import path from "path";
 import morgan from "morgan";
 import chalk from "chalk";
-
+import "./helpers/cronJob";
 import errorMiddleware from "./middlewares/error";
 import pageNotFound from "./middlewares/pageNotFound";
 import "./helpers/redis-client";

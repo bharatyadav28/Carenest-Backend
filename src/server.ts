@@ -2,6 +2,7 @@ import { createServer } from "http";
 import app from "./app";
 import { db } from "./db";
 import "dotenv/config";
+import "./helpers/cronJob";
 
 import { setUpSocket } from "./socket";
 
