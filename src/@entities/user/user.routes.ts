@@ -21,6 +21,10 @@ import {
   deleteUserByAdmin,
   updateRequiredBy,
   getRequiredBy,
+  bulkUploadUsers,
+  sendBulkEmail,
+  getUsersForBulkEmail,
+  validateUsersForEmail,
 } from "./user.controller";
 import { validateData } from "../../middlewares/validation";
 import {
@@ -29,9 +33,12 @@ import {
   signinUserSchema,
   updateUserByAdminSchema,
   updateUserSchema,
+  
+ 
 } from "./user.schema";
 import { isAdmin, isSeeker } from "../../middlewares/auth";
 import { upload } from "../../helpers/s3";
+import { sendBulkEmailSchema } from "./bulk-email.schema";
 
 const userRouter = express.Router();
 
@@ -72,8 +79,24 @@ userRouter
   .post(isAdmin, validateData(createUserByAdminSchema), createUserByAdmin);
 
 userRouter
+  .route("/bulk-upload")
+  .post(isAdmin, upload.single("file"), bulkUploadUsers);
+
+userRouter
   .route("/manage-by-admin/:id")
   .put(isAdmin, validateData(updateUserByAdminSchema), updateUserByAdmin)
   .delete(isAdmin, deleteUserByAdmin);
+
+userRouter
+  .route("/bulk-email/send")
+  .post(isAdmin, validateData(sendBulkEmailSchema), sendBulkEmail);
+
+userRouter
+  .route("/bulk-email/users")
+  .get(isAdmin, getUsersForBulkEmail);
+
+userRouter
+  .route("/bulk-email/validate")
+  .post(isAdmin, validateUsersForEmail);
 
 export default userRouter;

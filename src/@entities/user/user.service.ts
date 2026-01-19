@@ -1,4 +1,7 @@
 import { eq, and } from "drizzle-orm";
+import * as XLSX from "xlsx";
+import * as fs from "fs";
+import * as path from "path";
 
 import { db } from "../../db";
 import { UserModel } from "./user.model";
@@ -21,6 +24,9 @@ import {
 } from "../../helpers/jwt";
 import { comparePassword, hashPassword } from "../../helpers/passwordEncrpt";
 import { s3Uploadv4 } from "../../helpers/s3";
+import sendEmail from "../../helpers/sendEmail";
+import { getAdminCreatedAccountHTML } from "../../helpers/emailText";
+import { createNotification } from "../notification/notification.service";
 
 export const findUserByEmail = async (email: string, role?: RoleType) => {
   const userRole = role || "user";
@@ -275,5 +281,222 @@ export const doesAccountExistsWithEmail = async (
     } else {
       await db.delete(UserModel).where(eq(UserModel.id, existingUser[0].id));
     }
+  }
+};
+
+interface BulkUserData {
+  name: string;
+  email: string;
+  mobile?: string;
+  address?: string;
+  city?: string;
+  zipcode?: number;
+  gender?: string;
+  role: "user" | "giver";
+}
+
+export const parseBulkUsersFromExcel = (filePath: string): BulkUserData[] => {
+  try {
+    const fileBuffer = fs.readFileSync(filePath);
+    const workbook = XLSX.read(fileBuffer, { type: "buffer" });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const data = XLSX.utils.sheet_to_json<any>(worksheet);
+
+    const validatedUsers: BulkUserData[] = data
+      .map((row, index) => {
+        // Validate required fields
+        if (!row.name || !row.email || !row.role) {
+          console.warn(`Row ${index + 2}: Missing required fields (name, email, or role)`);
+          return null;
+        }
+
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(row.email)) {
+          console.warn(`Row ${index + 2}: Invalid email format - ${row.email}`);
+          return null;
+        }
+
+        // Validate role
+        if (!["user", "giver"].includes(row.role.toLowerCase())) {
+          console.warn(`Row ${index + 2}: Invalid role - ${row.role}`);
+          return null;
+        }
+
+        return {
+          name: String(row.name).trim(),
+          email: String(row.email).trim().toLowerCase(),
+          mobile: row.mobile ? String(row.mobile).trim() : undefined,
+          address: row.address ? String(row.address).trim() : undefined,
+          city: row.city ? String(row.city).trim() : undefined,
+          zipcode: row.zipcode ? Number(row.zipcode) : undefined,
+          gender: row.gender ? String(row.gender).trim() : undefined,
+          role: row.role.toLowerCase() as "user" | "giver",
+        };
+      })
+      .filter((user): user is NonNullable<typeof user> => user !== null) as BulkUserData[];
+
+    return validatedUsers;
+  } catch (error) {
+    console.error("Error parsing Excel file:", error);
+    throw new BadRequestError("Failed to parse Excel file. Please check the file format.");
+  }
+};
+
+export const bulkCreateUsers = async ({
+  filePath,
+  fileName,
+}: {
+  filePath: string;
+  fileName: string;
+}) => {
+  try {
+    console.log(`Starting bulk user creation from file: ${fileName}`);
+
+    // Parse Excel file
+    const users = parseBulkUsersFromExcel(filePath);
+
+    if (users.length === 0) {
+      throw new BadRequestError("No valid users found in the Excel file");
+    }
+
+    const results = {
+      success: 0,
+      failed: 0,
+      errors: [] as Array<{ email: string; error: string }>,
+    };
+
+    // Process users in batches to avoid overwhelming the database
+    const batchSize = 20;
+    for (let i = 0; i < users.length; i += batchSize) {
+      const batch = users.slice(i, Math.min(i + batchSize, users.length));
+
+      for (const userData of batch) {
+        try {
+          // Check if user already exists
+          const existingUser = await db.query.UserModel.findFirst({
+            where: and(
+              eq(UserModel.email, userData.email),
+              eq(UserModel.role, userData.role),
+              eq(UserModel.isDeleted, false)
+            ),
+            columns: { id: true },
+          });
+
+          if (existingUser) {
+            results.failed++;
+            results.errors.push({
+              email: userData.email,
+              error: "User with this email already exists",
+            });
+            continue;
+          }
+
+          // Generate random password for bulk created users
+          const password = generateRandomString(8);
+          const hashedPassword = await hashPassword(password);
+
+          // Create new user
+          const newUser = await db
+            .insert(UserModel)
+            .values({
+              name: userData.name,
+              email: userData.email,
+              mobile: userData.mobile,
+              address: userData.address,
+              city: userData.city,
+              zipcode: userData.zipcode,
+              gender: userData.gender,
+              role: userData.role,
+              isEmailVerified: true, // Auto-verify for bulk admin creation
+              password: hashedPassword,
+            })
+            .returning();
+
+          if (newUser && newUser.length > 0) {
+            const createdUser = newUser[0];
+            results.success++;
+
+            // Send welcome email with credentials
+            try {
+              const userRole = createdUser.role === "admin" ? "user" : createdUser.role;
+              const emailHTML = getAdminCreatedAccountHTML(
+                createdUser.name,
+                createdUser.email,
+                password,
+                userRole
+              );
+
+              sendEmail({
+                to: createdUser.email,
+                subject: "Welcome to CareWorks - Your Account Credentials",
+                html: emailHTML,
+              }).catch((err) => {
+                console.error(`❌ Failed to send email to ${createdUser.email}:`, err.message);
+              });
+
+              console.log(`📧 Email queued for: ${createdUser.email}`);
+            } catch (emailError) {
+              console.error(`❌ Failed to send email to ${createdUser.email}:`, emailError);
+              // Don't fail the user creation if email fails
+            }
+
+            // Create welcome notification
+            try {
+              await createNotification(
+                createdUser.id,
+                "Account Created Successfully",
+                `Welcome to CareWorks! Your account has been created. You can now login with your credentials.`,
+                "user"
+              );
+            } catch (notificationError) {
+              console.error(
+                `Failed to create notification for user ${createdUser.id}:`,
+                notificationError
+              );
+              // Don't fail the user creation if notification fails
+            }
+          } else {
+            results.failed++;
+            results.errors.push({
+              email: userData.email,
+              error: "Failed to create user",
+            });
+          }
+        } catch (error: any) {
+          results.failed++;
+          results.errors.push({
+            email: userData.email,
+            error: error.message || "Unknown error occurred",
+          });
+        }
+      }
+    }
+
+    // Clean up file
+    try {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    } catch (err) {
+      console.error("Error deleting temporary file:", err);
+    }
+
+    console.log(`Bulk user creation completed. Success: ${results.success}, Failed: ${results.failed}`);
+    return results;
+  } catch (error: any) {
+    console.error("Error in bulkCreateUsers:", error);
+
+    // Clean up file in case of error
+    try {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    } catch (err) {
+      console.error("Error deleting temporary file:", err);
+    }
+
+    throw error;
   }
 };

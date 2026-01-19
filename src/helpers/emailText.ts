@@ -712,7 +712,6 @@ export const getDocumentUploadReminderHTML = (caregiverName?: string) => {
   return getCommonEmailTemplate(heading, subHeading, body);
 };
 
-// ...existing code...
 
 export const getAdminCreatedAccountHTML = (
   userName: string,

@@ -1,5 +1,7 @@
 import { query, Request, Response } from "express";
 import { eq, and, desc, or, sql, ilike, count } from "drizzle-orm";
+import * as fs from "fs";
+import * as path from "path";
 import { createNotification } from "../notification/notification.service";
 import { UserModel } from "./user.model";
 import { db } from "../../db";
@@ -30,6 +32,10 @@ import {
 } from "../../helpers/emailText";
 import { BookingModel } from "../booking/booking.model";
 import { generateRandomString } from "../../helpers/utils";
+import { scheduleBulkUserUploadJob } from "../../helpers/redis-client";
+// Add this import at the top
+import { sendBulkEmailSchema } from "./bulk-email.schema";
+import { BulkEmailService } from "./bulk-email.service";
 
 export const signup = async (req: Request, res: Response) => {
   const incomingData = req.cleanBody;
@@ -662,4 +668,174 @@ export const deleteUserByAdmin = async (req: Request, res: Response) => {
     success: true,
     message: "Account deleted successfully",
   });
+};
+
+export const bulkUploadUsers = async (req: Request, res: Response) => {
+  const file = req.file;
+
+  if (!file) {
+    throw new BadRequestError("Please upload an Excel file");
+  }
+
+  // Validate file type
+  const allowedMimes = [
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
+    "application/vnd.ms-excel", // .xls
+  ];
+
+  if (!allowedMimes.includes(file.mimetype)) {
+    throw new BadRequestError("Please upload a valid Excel file (.xls or .xlsx)");
+  }
+
+  // Save file to temporary directory since multer might upload to S3
+  const tempDir = path.join(process.cwd(), "temp");
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
+  }
+
+  const tempFilePath = path.join(tempDir, `${Date.now()}_${file.originalname}`);
+
+  // Write file to temp location
+  try {
+    fs.writeFileSync(tempFilePath, file.buffer);
+    console.log("📁 Temp file saved at:", tempFilePath);
+
+    // Queue the bulk upload job
+    await scheduleBulkUserUploadJob({
+      filePath: tempFilePath,
+      fileName: file.originalname,
+    });
+
+    return res.status(202).json({
+      success: true,
+      message: "Bulk user upload started. The process is running in the background and users will be created shortly.",
+      data: {
+        fileName: file.originalname,
+        status: "processing",
+      },
+    });
+  } catch (error) {
+    // Clean up temp file if error occurs
+    try {
+      if (fs.existsSync(tempFilePath)) {
+        fs.unlinkSync(tempFilePath);
+      }
+    } catch (err) {
+      console.error("Error cleaning up temp file:", err);
+    }
+
+    throw new BadRequestError("Failed to process the uploaded file");
+  }
+};
+
+
+
+
+// Add this function to user.controller.ts
+export const sendBulkEmail = async (req: Request, res: Response) => {
+  const { userIds, subject, message } = req.body;
+
+  try {
+    // Validate input
+    const validatedData = sendBulkEmailSchema.parse({
+      userIds,
+      subject,
+      message,
+    });
+
+    // Immediately return response to prevent timeout
+    res.status(200).json({
+      success: true,
+      message: "Bulk email process started",
+      data: {
+        totalUsers: validatedData.userIds.length,
+        status: "processing",
+        startedAt: new Date().toISOString(),
+      },
+    });
+
+    // Process emails in background (non-blocking)
+    setImmediate(async () => {
+      try {
+        const result = await BulkEmailService.sendToSelectedUsers(
+          validatedData.userIds,
+          validatedData.subject,
+          validatedData.message
+        );
+
+        console.log(`✅ Bulk email completed: ${result.sent}/${result.total} successful`);
+        
+        // Log results (you can also send to admin email or save to database)
+        if (result.failed > 0) {
+          console.log('❌ Failed emails:', result.failedEmails);
+        }
+
+      } catch (error: any) {
+        console.error('❌ Bulk email background process failed:', error.message);
+      }
+    });
+
+  } catch (error: any) {
+    console.error('Bulk email validation error:', error);
+    return res.status(400).json({
+      success: false,
+      message: error.errors?.[0]?.message || "Invalid request data",
+      error: error.message,
+    });
+  }
+};
+
+// Get users with pagination
+export const getUsersForBulkEmail = async (req: Request, res: Response) => {
+  try {
+    const { page = 1, limit = 50, search = '' } = req.query;
+    
+    const result = await BulkEmailService.getUsersForSelection(
+      Number(page),
+      Number(limit),
+      search as string
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Users fetched successfully",
+      data: result,
+    });
+  } catch (error: any) {
+    console.error('Error fetching users:', error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch users",
+      error: error.message,
+    });
+  }
+};
+
+// Validate users before sending
+export const validateUsersForEmail = async (req: Request, res: Response) => {
+  try {
+    const { userIds } = req.body;
+    
+    if (!userIds || !Array.isArray(userIds)) {
+      return res.status(400).json({
+        success: false,
+        message: "User IDs array is required",
+      });
+    }
+
+    const validation = await BulkEmailService.validateUsers(userIds);
+
+    return res.status(200).json({
+      success: true,
+      message: "Users validated",
+      data: validation,
+    });
+  } catch (error: any) {
+    console.error('Error validating users:', error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to validate users",
+      error: error.message,
+    });
+  }
 };

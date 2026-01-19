@@ -43,18 +43,16 @@ export const sendDocumentUploadReminder = async () => {
   }
 };
 
-cron.schedule("0 0 * * *", async () => {
+cron.schedule("30 6 * * *", async () => {
   try {
-    console.log("!!!Cron job running !!!!");
+    console.log("!!!Cron job running at 12:00 PM IST (06:30 UTC) !!!!");
     await sendDocumentUploadReminder();
-
-     // Run auto-complete bookings
     await autoCompleteExpiredBookings();
   } catch (error) {
-    console.log(error);
+    console.log("Cron job error:", error);
   }
 });
-// In cronjob.ts - add this function
+
 export const sendSubscriptionExpirationReminders = async () => {
   const threeDaysFromNow = new Date();
   threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
@@ -103,7 +101,6 @@ export const sendSubscriptionExpirationReminders = async () => {
   }
 };
 
-// Add to the cron schedule
 cron.schedule("0 9 * * *", async () => {
   try {
     console.log("Running subscription expiration reminders...");
