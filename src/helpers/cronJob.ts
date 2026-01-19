@@ -13,6 +13,8 @@ import { and, eq, or, sql } from "drizzle-orm";
 import sendEmail from "./sendEmail";
 import { getDocumentUploadReminderHTML } from "./emailText";
 
+
+
 export const sendDocumentUploadReminder = async () => {
   const giverType = eq(UserModel.role, "giver");
 
@@ -42,6 +44,8 @@ export const sendDocumentUploadReminder = async () => {
     });
   }
 };
+
+
 
 cron.schedule("30 6 * * *", async () => {
   try {

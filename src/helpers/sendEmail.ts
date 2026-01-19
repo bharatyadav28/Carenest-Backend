@@ -14,10 +14,10 @@ interface emailParams {
 
 const sendEmail = async ({ to, subject, html, attachments }: emailParams) => {
   // TODO: Remove this in production
-  // return Promise.resolve({
-  //   messageId: "bypassed",
-  //   response: "Email bypassed",
-  // });
+  return Promise.resolve({
+    messageId: "bypassed",
+    response: "Email bypassed",
+  });
 
   const devTransporter = nodemailer.createTransport({
     host: "smtp.ethereal.email",
