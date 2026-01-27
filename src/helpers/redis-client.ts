@@ -112,32 +112,6 @@ const worker = new Worker(
   }
 );
 
-// Keep worker alive
-worker.on("ready", () => {
-  console.log("✅ Worker is ready and listening...");
-});
 
-worker.on("error", (err) => {
-  console.error("❌ Worker error:", err);
-});
 
-worker.on("completed", (job) => {
-  console.log(`✅ Job ${job.id} (${job.name}) completed successfully`);
-});
-
-worker.on("failed", (job, err) => {
-  console.error(`❌ Job ${job?.id} (${job?.name}) failed:`, err?.message);
-});
-
-worker.on("active", (job) => {
-  console.log(`🔄 Job ${job.id} (${job.name}) is now active`);
-});
-
-myQueue.on("error", (err) => {
-  console.error("❌ Queue error:", err);
-});
-
-console.log("🚀 Worker initialized and listening on queue: careworks-queue");
-
-// Export worker to keep it in memory
 export { worker, myQueue };

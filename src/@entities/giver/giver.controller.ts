@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { count, desc, ilike, lte, or, sql } from "drizzle-orm";
+import { count, desc, ilike, lte, or, sql,isNull } from "drizzle-orm";
 import { and, eq, gte } from "drizzle-orm";
 import { BookmarkModel } from "../bookmark/bookmark.model";
 import { BadRequestError, NotFoundError } from "../../errors";
@@ -147,15 +147,66 @@ export const searchCaregivers = async (req: Request, res: Response) => {
   if (maxPrice)
     baseConditions.push(lte(JobProfileModel.maxPrice, Number(maxPrice)));
 
-  if (experienceMin)
-    baseConditions.push(
-      gte(JobProfileModel.experienceMin, Number(experienceMin))
-    );
+  // Handle experience filtering to include null values for 0-1 year range
+  if (experienceMin !== undefined && experienceMax !== undefined) {
+    const expMin = Number(experienceMin);
+    const expMax = Number(experienceMax);
+    
+    // If filtering for 0-1 year experience, include users with null experience
+    if (expMin === 0 && expMax === 1) {
+      baseConditions.push(
+        or(
+          // Users with null experience (no profile saved)
+          isNull(JobProfileModel.experienceMin),
+          isNull(JobProfileModel.experienceMax),
+          // Users with experience in the 0-1 range
+          and(
+            gte(JobProfileModel.experienceMin, expMin),
+            lte(JobProfileModel.experienceMax, expMax)
+          )
+        )
+      );
+    } else {
+      // For other experience ranges, use normal filtering
+      if (experienceMin) {
+        baseConditions.push(gte(JobProfileModel.experienceMin, expMin));
+      }
+      if (experienceMax) {
+        baseConditions.push(lte(JobProfileModel.experienceMax, expMax));
+      }
+    }
+  } else {
+    // Handle individual experience filters if not both provided
+    if (experienceMin) {
+      const expMin = Number(experienceMin);
+      // For min experience = 0, include null values
+      if (expMin === 0) {
+        baseConditions.push(
+          or(
+            isNull(JobProfileModel.experienceMin),
+            gte(JobProfileModel.experienceMin, expMin)
+          )
+        );
+      } else {
+        baseConditions.push(gte(JobProfileModel.experienceMin, expMin));
+      }
+    }
 
-  if (experienceMax)
-    baseConditions.push(
-      lte(JobProfileModel.experienceMax, Number(experienceMax))
-    );
+    if (experienceMax) {
+      const expMax = Number(experienceMax);
+      // For max experience = 1, include null values
+      if (expMax === 1) {
+        baseConditions.push(
+          or(
+            isNull(JobProfileModel.experienceMax),
+            lte(JobProfileModel.experienceMax, expMax)
+          )
+        );
+      } else {
+        baseConditions.push(lte(JobProfileModel.experienceMax, expMax));
+      }
+    }
+  }
 
   if (certified)
     baseConditions.push(eq(JobProfileModel.certified, certified === "true"));
@@ -247,7 +298,6 @@ export const searchCaregivers = async (req: Request, res: Response) => {
     },
   });
 };
-
 export const caregiverDetails = async (req: Request, res: Response) => {
   const caregiverId = req.params.id;
   const userId = req.user?.id; // Get user ID if authenticated

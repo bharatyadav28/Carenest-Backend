@@ -17,11 +17,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2025-11-17.clover",
 });
 
-const frontendDomain = "https://carenest-caregiver.vercel.app";
+const frontendDomain = process.env.FRONTEND_URL || "https://carenest-caregiver.vercel.app";
 
-// --------------------------------------------------
-// HELPERS
-// --------------------------------------------------
 
 const safeUnixToDate = (value: any): Date | null => {
   if (!value || typeof value !== "number") return null;
@@ -40,11 +37,8 @@ const getOrCreateCustomer = async (userId: string, email: string) => {
   return customer.id;
 };
 
-// --------------------------------------------------
-// CHECKOUT SESSION CREATION - UPDATED for latest price
-// --------------------------------------------------
 
-// helpers/stripe.ts - ADD THIS FUNCTION
+
 export const updateSubscriptionPrice = async (subscriptionId: string, newPriceId: string) => {
   try {
     // First retrieve the subscription to get the item ID
@@ -69,7 +63,6 @@ export const updateSubscriptionPrice = async (subscriptionId: string, newPriceId
   }
 };
 
-// Also update the createSubscriptionCheckout to accept isRenewal parameter
 export const createSubscriptionCheckout = async (userId: string, isRenewal: boolean = false) => {
   const user = await db.query.UserModel.findFirst({
     where: eq(UserModel.id, userId),
@@ -134,9 +127,6 @@ export const getSubscriptionStatus = async (userId: string) => {
   };
 };
 
-// --------------------------------------------------
-// CANCEL/REACTIVATE FUNCTIONS
-// --------------------------------------------------
 
 // Schedule cancellation at period end
 export const scheduleSubscriptionCancellation = async (stripeSubscriptionId: string) => {
@@ -169,9 +159,7 @@ export const cancelStripeSubscription = async (stripeSubscriptionId: string) => 
   }
 };
 
-// --------------------------------------------------
-// NEW: PRICE CHANGE FUNCTIONALITY
-// --------------------------------------------------
+
 
 export const updatePlanPriceForAllUsers = async (oldPlanId: string, newPlanId: string, newAmount: number) => {
   try {
@@ -252,9 +240,8 @@ export const updatePlanPriceForAllUsers = async (oldPlanId: string, newPlanId: s
   }
 };
 
-// --------------------------------------------------
-// WEBHOOK HANDLER (UPDATED for price awareness)
-// --------------------------------------------------
+
+
 
 export const stripeWebhookHandler = async (req: Request, res: Response) => {
   const sig = req.headers["stripe-signature"] as string;
@@ -305,9 +292,6 @@ export const stripeWebhookHandler = async (req: Request, res: Response) => {
   }
 };
 
-// --------------------------------------------------
-// HANDLERS - UPDATED for price awareness
-// --------------------------------------------------
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const userId = session.metadata?.userId;
@@ -547,9 +531,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     .where(eq(UserModel.id, userId));
 }
 
-// --------------------------------------------------
-// FIXED for Stripe 2025 API
-// --------------------------------------------------
+
 
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
   const line = invoice.lines.data[0];
